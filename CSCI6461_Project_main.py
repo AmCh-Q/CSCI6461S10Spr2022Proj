@@ -1,17 +1,14 @@
 import tkinter
 from tkinter import ttk
 from CSCI6461_Project_gui_interface import *
+from CSCI6461_Project_data import *
 
-def main():
-  # [localVar] list of local variables that will be written by other functions
-  #   it is used by the console
-  localVar = {}
-  
+def main():  
   # initializes memory
-  localVar['memory'] = [0]*2048
+  data['memory'] = [0]*2048
   
-  # create the gui window, writes to localVar
-  guiInterface(localVar)
+  # create the gui window, writes to data
+  guiInterface()
 
   # a temporary (very janky) field console to run custom commands
   # this is not safe--there's very little preventing you from going "rm -rf" here
@@ -20,7 +17,7 @@ def main():
     # globals() are the function definitons and variables above
     #   so you can use/modify them as you wish
     try:
-      exec(input(">>> "), globals(), localVar)
+      exec(input(">>> "), globals(), data)
     except Exception as e:
       print(e)
 

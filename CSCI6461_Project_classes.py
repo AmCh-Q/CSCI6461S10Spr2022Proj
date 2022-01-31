@@ -98,8 +98,6 @@ class bitString:
     # [trigger] boolean, whether custom triggers will be called
     remainder = value
     for i in range(self.count):
-      if remainder <= 0:
-        break # we are done
       if remainder >= (2 ** (self.count - i - 1)):
         # change a bit to 1 to accomodate some of the remainder value
         self.bits[i].v = 1
