@@ -9,9 +9,9 @@ def windowMemory_onClose():
     # destroy and remove record of the window
     data['windowMemory'].destroy()
     del data['windowMemory']
-  if 'openGUIMemory' in data:
+  if 'guiMemoryBtn' in data:
     # reenable the button in optionsFrame for reopening editor
-    data['openGUIMemory'].config(state=tkinter.NORMAL)
+    data['guiMemoryBtn'].config(state=tkinter.NORMAL)
 
 def memoryWrite(address):
   # trigger function when memory editor edits memory value
@@ -78,8 +78,8 @@ def guiMemory():
   # └memoryCont
   #  └memoryEntry[0,15]
   
-  if 'openGUIMemory' in data:
-    data['openGUIMemory'].config(state=tkinter.DISABLED)
+  if 'guiMemoryBtn' in data:
+    data['guiMemoryBtn'].config(state=tkinter.DISABLED)
   # create a separate window to view/edit the memory
   data['windowMemory'] = windowMemory = tkinter.Tk() # create the window
   windowMemory.title("CSCI6461 Project Machine Memory") # name the window
