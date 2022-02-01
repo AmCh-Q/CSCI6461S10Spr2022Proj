@@ -15,7 +15,7 @@ def guiInterface():
   # │└GPR[0,3],IXR[1,3]
   # └controlsFrame
   #  ├registersMainFrame
-  #  │└PC,MAR,MBR,IR,MFR,Priviledged
+  #  │└PC,MAR,MBR,IR,MFR,Privileged
   #  └optionsFrame
   #   └openGUIMemory,programLoad
   
@@ -60,8 +60,8 @@ def guiInterface():
     .create(frame=registersMainFrame, text="MFR:", x=0, y=4, gap=12, toggleAble=False)
   data['CC'] = labeledBitString(2) \
     .create(frame=registersMainFrame, text="CC:", x=0, y=5, gap=14, toggleAble=False)
-  data['Priviledged'] = labeledBitString(1) \
-    .create(frame=registersMainFrame, text="Priviledged: ", x=0, y=6, gap=15, toggleAble=False)
+  data['Privileged'] = labeledBitString(1) \
+    .create(frame=registersMainFrame, text="Privileged: ", x=0, y=6, gap=15, toggleAble=False)
   
   # create a frame inside controlsFrame to fit all the command buttons
   data["optionsFrame"] = optionsFrame = ttk.Frame(controlsFrame)
