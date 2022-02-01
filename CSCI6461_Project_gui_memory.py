@@ -93,7 +93,7 @@ def guiMemory():
   memoryPage = ttk.Frame(windowMemory, padding=(0,10,0,0))
   memoryPage.grid(column=0,row=0)
   data['memoryPageNum'] = memoryPageNum = labeledBitString(12) \
-    .create(frame=memoryPage, text="Memory Address: ", gap=4)
+    .create(frame=memoryPage, text="Memory Address (page number): ", gap=4)
   # disable some buttons because they don't correspond to valid page numbers
   for i in [0,8,9,10,11]:
     memoryPageNum.bits[i].btn.config(state=tkinter.DISABLED)
