@@ -40,10 +40,10 @@ def guiInterface():
   data['GPR'],data['IXR'] = GPR,IXR = [None]*4,[None]*4 # initialize list for the registers
   for i in range(4): # create all 4 GPR registers
     GPR[i] = labeledBitString(16) \
-      .create(frame=registersGPRFrame, text="GPR "+str(i)+":", x=0, y=i, gap=0, width=6)
+      .create(frame=registersGPRFrame, text=f"GPR {str(i)}:", x=0, y=i, gap=0, width=6)
   for i in range(1,4): # create all 3 IXR registers
     IXR[i] = labeledBitString(16) \
-      .create(frame=registersGPRFrame, text="IXR "+str(i)+":", x=0, y=i+4, gap=0, width=6)
+      .create(frame=registersGPRFrame, text=f"IXR {str(i)}:", x=0, y=i+4, gap=0, width=6)
   # create a small spacer between GPR and IXR, just to make things look better
   spacerGPR = ttk.Label(registersGPRFrame, text="")
   spacerGPR.grid(column=0,row=4)

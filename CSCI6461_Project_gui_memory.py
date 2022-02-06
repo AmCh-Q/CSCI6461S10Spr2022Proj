@@ -121,4 +121,3 @@ def guiMemory():
   # add number navigator trigger and call once
   memoryPageNum.trigs["page_update"] = lambda: memoryPageUpdate()
   memoryPageUpdate()
-  

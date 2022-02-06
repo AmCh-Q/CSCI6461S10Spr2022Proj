@@ -229,4 +229,3 @@ class labeledBitString(bitString):
       # so it gets called when the bit updates
       self.bits[i].trigs["labeledBitString_update"] = lambda: self.update()
     return self # return self for chaining
-    
