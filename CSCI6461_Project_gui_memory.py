@@ -34,7 +34,7 @@ def memoryPageUpdate():
   for i in range(16):
     address = memoryPageNum * 16 + i # calculate full address
     # change label text to reflect new memory address of entry
-    memoryEntry[i].text_set(text="Word "+str(i)+" ("+hex(address)+"):")
+    memoryEntry[i].text_set(text=f"Word {str(i)} ({address:#0{5}X}):".replace("X","x"))
     # update trigger function to write to the correct new memory address
     #   python default param hackery involved: https://tinyurl.com/2d7bdwp6
     memoryEntry[i].trigs["memory_write"] = lambda a=address: memoryWrite(a)
@@ -52,27 +52,30 @@ def programLoad():
   data['memory'] = memory = [0]*2048
   data['memory'][1] = 6 # as suggested in project description, delete by phase 3
   if len(fileName) > 0:
-    content = open(fileName,"r").read().splitlines()
+    content = []
+    try:
+      content = open(fileName,"r").read().splitlines()
+    except Exception:
+      print(f"Error loading: file '{fileName}' does not appear to be a readable text file.")
+      content = []
     for i in range(len(content)):
       line = content[i].split()
-      if len(line) != 2:
-        print("Error loading: line "+str(i+1)+" has "+str(len(line)) \
+      if len(line) < 2:
+        print(f"Error loading: line {str(i+1)} has {str(len(line))}"\
           +" terms when it is supposed to have 2, skipping.")
         continue
       addr,val = 0,0
       try:
         addr,val = int(line[0],16),int(line[1],16)
-      except:
-        print("Error loading: line "+str(i+1) \
+      except Exception:
+        print(f"Error loading: line {str(i+1)}" \
           +"'s content does not appear to be hexadecimal, skipping.")
         continue
       if addr > 2047 or addr < 0:
-        print("Error loading: line "+str(i+1) \
-          +"'s address is out of bounds [0,2047], skipping.")
+        print(f"Error loading: line {str(i+1)}'s address is out of bounds [0,2047], skipping.")
         continue
       if val > 65535 or val < 0:
-        print("Error loading: line "+str(i+1) \
-          +"'s value is out of bounds [0,65535], skipping.")
+        print(f"Error loading: line {str(i+1)}'s value is out of bounds [0,65535], skipping.")
         continue
       memory[addr] = val
   memoryPageUpdate()
@@ -94,9 +97,10 @@ def guiMemory():
   windowMemory.title("CSCI6461 Project Machine Memory") # name the window
   # if window is closed, destroy it
   windowMemory.protocol("WM_DELETE_WINDOW", lambda: windowMemory_onClose())
-  # change disabled buttons to regular (black) text
+  # change disabled buttons to regular (black) text, label font to monospace
   style = ttk.Style(master=windowMemory) # get style settings for windowMemory
   style.map("TButton", foreground=[("disabled", "SystemWindowText")])
+  style.configure("Courier.TLabel", font=('Courier', 12))
 
   # create a page number navigator, only top padding is needed
   memoryPage = ttk.Frame(windowMemory, padding=(0,10,0,0))

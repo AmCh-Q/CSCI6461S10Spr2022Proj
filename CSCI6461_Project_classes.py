@@ -158,7 +158,7 @@ class labeledBitString(bitString):
     # [trigger] Boolean, simply passed for bitString.update()
     super().update(trigger=trigger)
     if self.labelHex != None: # update labelHex to new hex value
-      self.labelHex.config(text=hex(self.value()))
+      self.labelHex.config(text=f"{self.value():#0{6}X}".replace("X","x"))
     if self.labelTen != None: # update labelTen to new base-ten value
       self.labelTen.config(text=str(self.value()))
     return self
@@ -210,9 +210,10 @@ class labeledBitString(bitString):
     self.labelTxt = ttk.Label(frame, text=text, **kwargs)
     self.labelTxt.grid(column=x, row=y, sticky = tkinter.W)
     if numLabels:
-      self.labelHex = ttk.Label(frame, text=hex(value), width=6)
+      self.labelHex = ttk.Label(frame, \
+        text=f"{value:#0{6}X}".replace("X","x"), width=6, style="Courier.TLabel")
       self.labelHex.grid(column=x+gap+self.count+1, row=y, sticky = tkinter.W, padx=(5,0))
-      self.labelTen = ttk.Label(frame, text=str(value), width=5)
+      self.labelTen = ttk.Label(frame, text=str(value), width=5, style="Courier.TLabel")
       self.labelTen.grid(column=x+gap+self.count+2, sticky = tkinter.W, row=y)
     # create the bitString
     # [x] is shifted to the right by 3 to fit the 3 labels

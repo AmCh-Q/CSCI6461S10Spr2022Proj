@@ -35,7 +35,7 @@ def writeToMemory(address, value, indirect, checkReserve=True):
   # [indirect] boolean, specifies if it is a direct write
   # [checkReserve] boolean, whether write location should be checked
   #   (normally can't write to memory location 0-5)
-  # return -(fault ID)-1 if fault occurs
+  # returns -(fault ID)-1 if fault occurs
   # otherwise return 0
   
   # get the effective memory address into MAR, update MBR as needed
@@ -64,7 +64,7 @@ def fault(id):
   # [id] integer range [0,3], for the kind of machine fault
   data['MFR'].value_set(2 ** id)
   address = data['PC'].value()
-  writeToMemory(4, address, checkReserve=False)
+  writeToMemory(4, address, checkReserve=False, indirect=False)
   address = readFromMemory(1)
   data['PC'].value_set(address)
   
@@ -84,17 +84,25 @@ def splitInstructionLoadStore(instruction):
   return opcode,r,ix,i,address
   
 def LoadStoreInstExec(instruction):
+  # execute load/store instructions (LDR/LDA/LDX/STR/STX)
+  # [instruction] 16-bit integer
+  # returns read value if instruction is a successful load
+  # returns 0 if instruction is a successful write
+  # returns -(fault ID)-1 if fault occurs
   opcode,r,ix,i,address = splitInstructionLoadStore(instruction)
-  EA = address
+  EA,value = address,0 # initialize effective address (EA) and return value
   if opcode in [1,2,3] and ix > 0:
     # Need to Calculate Effective Address
-    EA = (address + data["IXR"][ix].value()) % 4096
+    EA = address + data["IXR"][ix].value()
   if opcode in [1,3,33]: # LD instructions (LDR/LDA/LDX)
     if opcode in [1,33]: # LDR/LDX
       # Get Value From Memory
       value = readFromMemory(EA, indirect=i)
     if opcode == 3: # LDA
-      value = EA
+      if i: # indirect LDA is equivalent to direct LDR
+        value = readFromMemory(EA, False)
+      else:
+        value = EA
     if opcode in [1,3]: # LDR/LDA
       # load value into GPR
       data["GPR"][r].value_set(value)
@@ -112,7 +120,8 @@ def LoadStoreInstExec(instruction):
       else:
         # invalid IXR, 0 used
         value = 0
-    writeToMemory(EA, value, indirect=i)
+    value = writeToMemory(EA, value, indirect=i)
+  return value
 
 def execute(instruction):
   # execute instruction num
@@ -126,8 +135,7 @@ def execute(instruction):
     HLT()
     return False
   elif opcode in [1,2,3,33,34]:
-    LoadStoreInstExec(instruction)
-    return True
+    return LoadStoreInstExec(instruction) >= 0
   else:
     fault(2)
     return False

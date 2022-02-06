@@ -29,8 +29,10 @@ def guiInterface():
   
   # the original ttk style for disabled buttons have gray text, which is hard to read
   #   so change it to regular (black) text
+  # also change label font to monospace for easier reading and managing layouts
   style = ttk.Style(master=windowInterface) # get style settings for windowInterface
   style.map("TButton", foreground=[("disabled", "SystemWindowText")])
+  style.configure("Courier.TLabel", font=('Courier', 12))
   
   # create a frame to fit GPR and IXR
   data['registersGPRFrame'] = registersGPRFrame = ttk.Frame(windowInterface, padding=10)
