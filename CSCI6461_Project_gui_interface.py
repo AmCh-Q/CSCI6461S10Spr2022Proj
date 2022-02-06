@@ -104,7 +104,7 @@ def guiInterface():
   storePlusBtn.grid(column=4,row=0)
   # button for load button
   data['loadBtn'] = loadBtn = ttk.Button( \
-    optionsFrame, text="Load", width = 8, command=lambda: readFromMemory(data['MAR'].value()))
+    optionsFrame, text="Load", width = 8, command=lambda: readFromMemory(data['MAR'].value(), indirect=False))
   loadBtn.grid(column=5,row=0)
   # button for opening Loading Memory
   data['programLoadBtn'] = programLoadBtn = ttk.Button( \
@@ -126,6 +126,6 @@ def store(plus=False):
   # [plus] boolean, whether it is a st+ function
   address = data['MAR'].value()
   value = data['MBR'].value()
-  writeToMemory(address, value, checkReserve=False)
+  writeToMemory(address, value, checkReserve=False, indirect=False)
   if plus:
     data['MAR'].value_set(address+1)

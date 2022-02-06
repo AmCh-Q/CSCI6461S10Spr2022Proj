@@ -26,7 +26,7 @@ def readFromMemory(address, indirect=False):
     data['MBR'].value_set(content)
   return content
 
-def writeToMemory(address, value, indirect, checkReserve=True):
+def writeToMemory(address, value, indirect=False, checkReserve=True):
   # writes the value to address in memory, updates MAR/MBR accordingly
   # does not write to any registers besides MAR and MBR
   # handles indirection, but not IX field (effective address should've been calculated already)
