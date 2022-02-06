@@ -24,7 +24,7 @@ def guiInterface():
   
   data['windowInterface'] = windowInterface = tkinter.Tk() # create the GUI window
   windowInterface.title("CSCI6461 Project Machine Interface") # name the window
-  # if window is closed, call quit() to end the program
+  # add trigger: if window is closed, call sys.exit() to end the program
   windowInterface.protocol("WM_DELETE_WINDOW", sys.exit)
   
   # the original ttk style for disabled buttons have gray text, which is hard to read
