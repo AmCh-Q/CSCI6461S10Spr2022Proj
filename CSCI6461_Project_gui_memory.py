@@ -28,6 +28,7 @@ def memoryPageUpdate():
     return
   # get new page number
   memoryPageNum = int(data['memoryPageNum'].value() / 16)
+  data['memoryPageNum'].labelTxt.config(text=f"Memory Address (Page {memoryPageNum}): ")
   memoryEntry = data['memoryEntry'] # get the list of labeledBitString
   memory = data['memory'] # get reference to memory  
   for i in range(16):
@@ -42,9 +43,16 @@ def memoryPageUpdate():
     
 def programLoad():
   fileName = filedialog.askopenfilename(title="Select File", initialdir=".")
+  for i in range(4):
+    data['GPR'][i].value_set(0)
+  for i in range(1,4):
+    data['IXR'][i].value_set(0)
+  for i in ['PC','MAR','MBR','IR','MFR','CC','HALT']:
+    data[i].value_set(0)
+  data['memory'] = memory = [0]*2048
+  data['memory'][1] = 6 # as suggested in project description, delete by phase 3
   if len(fileName) > 0:
     content = open(fileName,"r").read().splitlines()
-    data['memory'] = memory = [0]*2048
     for i in range(len(content)):
       line = content[i].split()
       if len(line) != 2:
@@ -67,11 +75,12 @@ def programLoad():
           +"'s value is out of bounds [0,65535], skipping.")
         continue
       memory[addr] = val
-    memoryPageUpdate()
+  memoryPageUpdate()
 
 def guiMemory():
   # start making interface for memory view/configuration
   # disable the open window button to prevent opening it again
+  # GUI Structure:
   # windowMemory
   # ├memoryPage
   # │└memoryPageNum
@@ -93,7 +102,7 @@ def guiMemory():
   memoryPage = ttk.Frame(windowMemory, padding=(0,10,0,0))
   memoryPage.grid(column=0,row=0)
   data['memoryPageNum'] = memoryPageNum = labeledBitString(12) \
-    .create(frame=memoryPage, text="Memory Address (page number): ", gap=4)
+    .create(frame=memoryPage, text="Memory Address (Page 0): ", width=26, gap=4)
   # disable some buttons because they don't correspond to valid page numbers
   for i in [0,8,9,10,11]:
     memoryPageNum.bits[i].btn.config(state=tkinter.DISABLED)

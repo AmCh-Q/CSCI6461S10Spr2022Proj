@@ -181,7 +181,7 @@ class labeledBitString(bitString):
     self.destroyLabel(self.labelHex)
     self.destroyLabel(self.labelTen)
     return self # return self for chaining
-  def create(self, frame, text="", x=0, y=0, gap=0, toggleAble=True, **kwargs):
+  def create(self, frame, text="", x=0, y=0, gap=0, toggleAble=True, numLabels=True, **kwargs):
     # create the entire row of labeled bitString
     # [frame] tkinter frame, where to place everything
     # [text] string, the name of the row, will be placed in self.labelTxt
@@ -209,10 +209,11 @@ class labeledBitString(bitString):
     value = self.value() # get the bitStr value for the labels
     self.labelTxt = ttk.Label(frame, text=text, **kwargs)
     self.labelTxt.grid(column=x, row=y, sticky = tkinter.W)
-    self.labelHex = ttk.Label(frame, text=hex(value), width=6)
-    self.labelHex.grid(column=x+gap+self.count+1, row=y, sticky = tkinter.W, padx=(5,0))
-    self.labelTen = ttk.Label(frame, text=str(value), width=5)
-    self.labelTen.grid(column=x+gap+self.count+2, sticky = tkinter.W, row=y)
+    if numLabels:
+      self.labelHex = ttk.Label(frame, text=hex(value), width=6)
+      self.labelHex.grid(column=x+gap+self.count+1, row=y, sticky = tkinter.W, padx=(5,0))
+      self.labelTen = ttk.Label(frame, text=str(value), width=5)
+      self.labelTen.grid(column=x+gap+self.count+2, sticky = tkinter.W, row=y)
     # create the bitString
     # [x] is shifted to the right by 3 to fit the 3 labels
     #   then by [gap] as specified by the method caller for alignment
