@@ -11,7 +11,7 @@ def readFromMemory(address, indirect=False):
   # return -(fault ID)-1 if fault occurs
   # return [content] integer, the value stored in the memory location
   if address > 2047 or address < 0:
-    fault(3)
+    fault(3) # Illegal Memory Address (memory installed)
     return -4
   data['MAR'].value_set(address)
   content = data['memory'][address]
@@ -19,7 +19,7 @@ def readFromMemory(address, indirect=False):
   if indirect: # indirection
     address = content
     if address > 2047 or address < 0:
-      fault(3)
+      fault(3) # Illegal Memory Address (memory installed)
       return -4
     data['MAR'].value_set(address)
     content = data['memory'][address]
@@ -40,19 +40,19 @@ def writeToMemory(address, value, indirect=False, checkReserve=True):
   
   # get the effective memory address into MAR, update MBR as needed
   if address > 2047 or address < 0:
-    fault(3)
+    fault(3) # Illegal Memory Address (memory installed)
     return -4
   data['MAR'].value_set(address)
   if indirect: # indirection
     address = data['memory'][address]
     data['MBR'].value_set(address)
     if address > 2047 or address < 0:
-      fault(3)
+      fault(3) # Illegal Memory Address (memory installed)
       return -4
     data['MAR'].value_set(address)
   # try to write the value to MBR and effective address in memory
   if checkReserve and address<6:
-    fault(0)
+    fault(0) # Illegal Memory Address (reserved location)
     return -1
   data['MBR'].value_set(value)
   data['memory'][address] = value
