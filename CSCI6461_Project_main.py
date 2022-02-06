@@ -1,5 +1,3 @@
-import tkinter
-from tkinter import ttk
 from CSCI6461_Project_gui_interface import *
 from CSCI6461_Project_data import *
 
