@@ -63,8 +63,10 @@ def fault(id):
   # report a machine fault, then does the 
   # [id] integer range [0,3], for the kind of machine fault
   data['MFR'].value_set(2 ** id)
+  # store PC for machine fault to reserved location (at address 4)
   address = data['PC'].value()
   writeToMemory(4, address, checkReserve=False, indirect=False)
+  # get the PC reserved for faults (at address 1)
   address = readFromMemory(1)
   data['PC'].value_set(address)
   
