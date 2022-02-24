@@ -12,7 +12,7 @@ def main():
   # this is not safe--there's very little preventing you from going "rm -rf" here
   # so know what you are doing and don't do dangerous stuff
   while True:
-    # globals() are the function definitons and variables above
+    # globals() are the function definitions and variables above,
     #   so you can use/modify them as you wish
     try:
       exec(input(">>> "), globals(), data)

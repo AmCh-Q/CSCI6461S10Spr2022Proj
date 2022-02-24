@@ -60,7 +60,7 @@ class bit:
     # [text] value (0 or 1) of the button
     # [command] calls flip(self) when it is clicked
     self.btn = ttk.Button( \
-      frame, text=str(self.v), command=lambda: self.flip(), style="TButton",**kwargs)
+      frame, text=str(self.v), command=self.flip, style="TButton",**kwargs)
     self.btn.grid(column=x, row=y) # place the button in the GUI
     return self #return self to allow chaining of method calls
 
@@ -142,7 +142,7 @@ class bitString:
       self.bits[i].create(frame=frame, x=x+i, y=y, state=buttonState, **kwargs)
       # add update(self) to the trigger list of every bit instance
       # so it gets called when the bit updates
-      self.bits[i].trigs["bitString_update"] = lambda: self.update()
+      self.bits[i].trigs["bitString_update"] = self.update
     return self # return self for chaining
     
 class labeledBitString(bitString):
@@ -194,6 +194,12 @@ class labeledBitString(bitString):
     #   (for the style of the bottons, use self.bitStyle(**kwargs))
     #   (for other non-style properties of the buttons,
     #     you'd have to modify self.bitStr.bits individually)
+    
+    # create the bitString
+    # [x] is shifted to the right by 1 to fit the labelTxt (name)
+    #   then by [gap] as specified by the method caller for alignment
+    # [width=2] is a custom **kwargs argument that sets the width of the buttons
+    super().create(frame=frame, x=x+1+gap, y=y, width=2, toggleAble=toggleAble)
     # destroy labels first to remake the labels
     self.destroyLabel(self.labelTxt)
     self.destroyLabel(self.labelHex)
@@ -215,17 +221,4 @@ class labeledBitString(bitString):
       self.labelHex.grid(column=x+gap+self.count+1, row=y, sticky = tkinter.W, padx=(5,0))
       self.labelTen = ttk.Label(frame, text=str(value), width=5, style="Courier.TLabel")
       self.labelTen.grid(column=x+gap+self.count+2, sticky = tkinter.W, row=y)
-    # create the bitString
-    # [x] is shifted to the right by 3 to fit the 3 labels
-    #   then by [gap] as specified by the method caller for alignment
-    # [width=2] is a custom **kwargs argument that sets the width of the buttons
-    # [state] is tkinter.NORMAL if it can be toggled
-    #   tkinter.DISABLED if it can't
-    buttonState = tkinter.NORMAL if toggleAble else tkinter.DISABLED
-    for i in range(self.count):
-      # call bit class' create method
-      self.bits[i].create(frame=frame, x=x+i+1+gap, y=y, width=2, state=buttonState)
-      # add update(self) to the trigger list of every bit instance
-      # so it gets called when the bit updates
-      self.bits[i].trigs["labeledBitString_update"] = lambda: self.update()
     return self # return self for chaining

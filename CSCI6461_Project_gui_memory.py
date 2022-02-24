@@ -10,7 +10,7 @@ def windowMemory_onClose():
     data['windowMemory'].destroy()
     del data['windowMemory']
   if 'guiMemoryBtn' in data:
-    # reenable the button in optionsFrame for reopening editor
+    # re-enable the button in optionsFrame for reopening editor
     data['guiMemoryBtn'].config(state=tkinter.NORMAL)
 
 def memoryWrite(address):
@@ -96,7 +96,7 @@ def guiMemory():
   data['windowMemory'] = windowMemory = tkinter.Tk() # create the window
   windowMemory.title("CSCI6461 Project Machine Memory") # name the window
   # if window is closed, destroy it
-  windowMemory.protocol("WM_DELETE_WINDOW", lambda: windowMemory_onClose())
+  windowMemory.protocol("WM_DELETE_WINDOW", windowMemory_onClose)
   # change disabled buttons to regular (black) text, label font to monospace
   style = ttk.Style(master=windowMemory) # get style settings for windowMemory
   style.map("TButton", foreground=[("disabled", "SystemWindowText")])
@@ -119,5 +119,9 @@ def guiMemory():
     memoryEntry[i] = labeledBitString(16).create(frame=memoryCont, y=i, width=15)
     
   # add number navigator trigger and call once
-  memoryPageNum.trigs["page_update"] = lambda: memoryPageUpdate()
+  memoryPageNum.trigs["page_update"] = memoryPageUpdate
   memoryPageUpdate()
+
+  # show the window, for use with PyCharm
+  # see https://stackoverflow.com/questions/51253078/tkinter-isnt-working-with-pycharm/51261747
+  # windowMemory.mainloop()

@@ -66,9 +66,9 @@ def guiInterface():
   data['conditionsFrame'] = conditionsFrame = ttk.Frame(controlsFrame)
   conditionsFrame.grid(column=0,row=2) # place the frame
   data['MFR'] = labeledBitString(4).create(
-    frame=conditionsFrame, text="MFR:", x=0, y=0, gap=0, toggleAble=False, numLabels=False)
-  data['CC'] = labeledBitString(2).create(
-    frame=conditionsFrame, text="CC:", x=8, y=0, gap=0, toggleAble=False, numLabels=False)
+    frame=conditionsFrame, text="MFR:", x=0, y=0, gap=0, numLabels=False)
+  data['CC'] = labeledBitString(4).create(
+    frame=conditionsFrame, text="CC:", x=8, y=0, gap=0, numLabels=False)
   data['HALT'] = labeledBitString(1).create(
     frame=conditionsFrame, text="HALT:", x=14, y=0, gap=0, numLabels=False)
   
@@ -88,11 +88,11 @@ def guiInterface():
   optionsFrame.grid(column=0,row=4)
   # button for single stepping execution
   data['singleStepBtn'] = singleStepBtn = ttk.Button( \
-    optionsFrame, text="Step", width = 8, command=lambda: singleStep())
+    optionsFrame, text="Step", width = 8, command=singleStep)
   singleStepBtn.grid(column=0,row=0)
   # button for continuous execution
   data['runBtn'] = runBtn = ttk.Button( \
-    optionsFrame, text="Run", width = 8, command=lambda: multiStep())
+    optionsFrame, text="Run", width = 8, command=multiStep)
   runBtn.grid(column=1,row=0)
   # button for store button
   data['storeBtn'] = storeBtn = ttk.Button( \
@@ -108,18 +108,22 @@ def guiInterface():
   loadBtn.grid(column=5,row=0)
   # button for opening Loading Memory
   data['programLoadBtn'] = programLoadBtn = ttk.Button( \
-    optionsFrame, text="Initialize", width = 8, command=lambda: programLoad())
+    optionsFrame, text="Initialize", width = 8, command=programLoad)
   programLoadBtn.grid(column=7,row=0)
   # button for opening Memory Editor
   data['guiMemoryBtn'] = guiMemoryBtn = ttk.Button( \
-    optionsFrame, text="Memory", width = 8, command=lambda: guiMemory())
+    optionsFrame, text="Memory", width = 8, command=guiMemory)
   guiMemoryBtn.grid(column=8,row=0)
   
   # create small spacers between some buttons
   spacerRun = ttk.Label(optionsFrame, text="", width=2)
-  spacerRun.grid(column=2,row=0)
+  spacerRun.grid(column=2, row=0)
   spacerLoad = ttk.Label(optionsFrame, text="", width=2)
-  spacerLoad.grid(column=6,row=0)
+  spacerLoad.grid(column=6, row=0)
+
+  # show the window, for use with PyCharm
+  # see https://stackoverflow.com/questions/51253078/tkinter-isnt-working-with-pycharm/51261747
+  # windowInterface.mainloop()
   
 def store(plus=False):
   # a function to be called for store and st+ button clicks
