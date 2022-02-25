@@ -2,6 +2,7 @@ import sys,tkinter
 from tkinter import ttk
 from CSCI6461_Project_classes import *
 from CSCI6461_Project_gui_memory import *
+from CSCI6461_Project_gui_cache import *
 from CSCI6461_Project_execution import *
 from CSCI6461_Project_data import *
 
@@ -66,18 +67,22 @@ def guiInterface():
   data['conditionsFrame'] = conditionsFrame = ttk.Frame(controlsFrame)
   conditionsFrame.grid(column=0,row=2) # place the frame
   data['MFR'] = labeledBitString(4).create(
-    frame=conditionsFrame, text="MFR:", x=0, y=0, gap=0, numLabels=False)
+    frame=conditionsFrame, text="MFR:", x=0, numLabels=False)
   data['CC'] = labeledBitString(4).create(
-    frame=conditionsFrame, text="CC:", x=8, y=0, gap=0, numLabels=False)
+    frame=conditionsFrame, text="CC:", x=6, numLabels=False)
   data['HALT'] = labeledBitString(1).create(
-    frame=conditionsFrame, text="HALT:", x=14, y=0, gap=0, numLabels=False)
+    frame=conditionsFrame, text="HALT:", x=12, numLabels=False)
+  data['RUN'] = labeledBitString(1).create(
+    frame=conditionsFrame, text="RUN:", x=15, numLabels=False)
   
   # create small spacers among condition registers
   # and between condition registers and mainRegs/buttons, just to make things look better
-  spacerConditions1 = ttk.Label(conditionsFrame, text="", width=5)
-  spacerConditions1.grid(column=7,row=0)
-  spacerConditions2 = ttk.Label(conditionsFrame, text="", width=5)
-  spacerConditions2.grid(column=13,row=0)
+  spacerConditions1 = ttk.Label(conditionsFrame, text="", width=3)
+  spacerConditions1.grid(column=5,row=0)
+  spacerConditions2 = ttk.Label(conditionsFrame, text="", width=3)
+  spacerConditions2.grid(column=11,row=0)
+  spacerConditions3 = ttk.Label(conditionsFrame, text="", width=3)
+  spacerConditions3.grid(column=14,row=0)
   spacerMains = ttk.Label(controlsFrame, text="")
   spacerMains.grid(column=0,row=1)
   spacerControls = ttk.Label(controlsFrame, text="")
@@ -114,6 +119,10 @@ def guiInterface():
   data['guiMemoryBtn'] = guiMemoryBtn = ttk.Button( \
     optionsFrame, text="Memory", width = 8, command=guiMemory)
   guiMemoryBtn.grid(column=8,row=0)
+  # button for opening Cache Editor
+  data['guiCacheBtn'] = guiCacheBtn = ttk.Button( \
+    optionsFrame, text="Cache", width = 8, command=guiCache)
+  guiCacheBtn.grid(column=9,row=0)
   
   # create small spacers between some buttons
   spacerRun = ttk.Label(optionsFrame, text="", width=2)

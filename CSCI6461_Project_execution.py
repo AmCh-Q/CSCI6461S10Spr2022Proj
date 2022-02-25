@@ -1,63 +1,8 @@
 from CSCI6461_Project_classes import *
 from CSCI6461_Project_data import *
 from CSCI6461_Project_gui_memory import *
-
-def readFromMemory(address, indirect=False):
-  # gets the value stored in memory, updates MAR/MBR accordingly and returns the result
-  # does not write to any registers besides MAR and MBR
-  # handles indirection, but not IX field (effective address should've been calculated already)
-  # [address] integer, the location from memory to read from
-  # [direct] boolean, specifies if it is a direct access
-  # return -(fault ID)-1 if fault occurs
-  # return [content] integer, the value stored in the memory location
-  if address > 2047 or address < 0:
-    fault(3) # Illegal Memory Address (memory installed)
-    return -4
-  data['MAR'].value_set(address)
-  content = data['memory'][address]
-  data['MBR'].value_set(content)
-  if indirect: # indirection
-    address = content
-    if address > 2047 or address < 0:
-      fault(3) # Illegal Memory Address (memory installed)
-      return -4
-    data['MAR'].value_set(address)
-    content = data['memory'][address]
-    data['MBR'].value_set(content)
-  return content
-
-def writeToMemory(address, value, indirect=False, checkReserve=True):
-  # writes the value to address in memory, updates MAR/MBR accordingly
-  # does not write to any registers besides MAR and MBR
-  # handles indirection, but not IX field (effective address should've been calculated already)
-  # [address] integer, the location from memory to write to
-  # [value] integer, the value to write to the memory
-  # [indirect] boolean, specifies if it is a direct write
-  # [checkReserve] boolean, whether write location should be checked
-  #   (normally can't write to memory location 0-5)
-  # returns -(fault ID)-1 if fault occurs
-  # otherwise return 0
-  
-  # get the effective memory address into MAR, update MBR as needed
-  if address > 2047 or address < 0:
-    fault(3) # Illegal Memory Address (memory installed)
-    return -4
-  data['MAR'].value_set(address)
-  if indirect: # indirection
-    address = data['memory'][address]
-    data['MBR'].value_set(address)
-    if address > 2047 or address < 0:
-      fault(3) # Illegal Memory Address (memory installed)
-      return -4
-    data['MAR'].value_set(address)
-  # try to write the value to MBR and effective address in memory
-  if checkReserve and address<6:
-    fault(0) # Illegal Memory Address (reserved location)
-    return -1
-  data['MBR'].value_set(value)
-  data['memory'][address] = value
-  memoryPageUpdate()
-  return 0
+from CSCI6461_Project_gui_cache import *
+from CSCI6461_Project_gui_io import *
   
 def fault(id):
   # report a machine fault, then does the 
@@ -244,7 +189,7 @@ def execute(instruction):
     fault(2)
     return False
 
-def singleStep(timer=True):
+def singleStep():
   # tries to run a single step
   # check if machine is stopped
   if data['HALT'].value() > 0:
@@ -263,7 +208,14 @@ def singleStep(timer=True):
   address += 1
   data['PC'].value_set(address)
   
-def multiStep():
+def multiStep(updateInterval=1):
   # "run", keeps calling singleStep until stopped
+  windowInterface = data['windowInterface']
+  data['RUN'].value_set(1)
+  updateStep = 0
   while data['HALT'].value() == 0:
-    singleStep(timer=False)
+    singleStep()
+    if updateStep == 0:
+      windowInterface.update()
+    updateStep = (updateStep+1)%updateInterval
+  data['RUN'].value_set(0)

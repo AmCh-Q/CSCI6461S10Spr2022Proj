@@ -181,7 +181,7 @@ class labeledBitString(bitString):
     self.destroyLabel(self.labelHex)
     self.destroyLabel(self.labelTen)
     return self # return self for chaining
-  def create(self, frame, text="", x=0, y=0, gap=0, toggleAble=True, numLabels=True, **kwargs):
+  def create(self, frame, text="", x=0, y=0, gap=0, padx=0, pady=0, toggleAble=True, numLabels=True, **kwargs):
     # create the entire row of labeled bitString
     # [frame] tkinter frame, where to place everything
     # [text] string, the name of the row, will be placed in self.labelTxt
@@ -189,6 +189,8 @@ class labeledBitString(bitString):
     #   (the row will always be rendered horizontally from there)
     # [gap] integer, shifts the bit buttons to the right
     #   to help align them with other rows
+    # [padx] integer, extra padding on the left
+    # [pady] integer, extra padding above and below
     # [toggleAble] boolean, if false, the buttons can't be clicked
     # [**kwargs] additional custom arguments for the self.labelTxt label
     #   (for the style of the bottons, use self.bitStyle(**kwargs))
@@ -211,10 +213,9 @@ class labeledBitString(bitString):
     #   and 0-2 (to fit the previous labels)
     # [row] is shifted by y(configured value)
     # [sticky] is tkinter.W to mean left alignment for text
-    # [padx] is for a bit extra padding, just to look better
     value = self.value() # get the bitStr value for the labels
     self.labelTxt = ttk.Label(frame, text=text, **kwargs)
-    self.labelTxt.grid(column=x, row=y, sticky = tkinter.W)
+    self.labelTxt.grid(column=x, row=y, sticky=tkinter.W, padx=(padx,0), pady=pady)
     if numLabels:
       self.labelHex = ttk.Label(frame, \
         text=f"{value:#0{6}X}".replace("X","x"), width=6, style="Courier.TLabel")

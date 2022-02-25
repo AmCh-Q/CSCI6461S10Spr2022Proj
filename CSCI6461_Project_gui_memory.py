@@ -13,7 +13,7 @@ def windowMemory_onClose():
     # re-enable the button in optionsFrame for reopening editor
     data['guiMemoryBtn'].config(state=tkinter.NORMAL)
 
-def memoryWrite(address):
+def memoryWriteTrig(address):
   # trigger function when memory editor edits memory value
   # do nothing if memory editor isn't open
   if not 'windowMemory' in data:
@@ -21,23 +21,23 @@ def memoryWrite(address):
   # write the line in memory editor into memory
   data['memory'][address] = data['memoryEntry'][address%16].value()
   
-def memoryPageUpdate():
-  # trigger function when memory editor page number changes
+def memoryBlockUpdate():
+  # trigger function when memory editor block number changes
   # do nothing if memory editor isn't open
   if not 'windowMemory' in data:
     return
-  # get new page number
-  memoryPageNum = int(data['memoryPageNum'].value() / 16)
-  data['memoryPageNum'].labelTxt.config(text=f"Memory Address (Page {memoryPageNum}): ")
+  # get new block number
+  memoryBlockNum = (data['memoryBlockNum'].value() >> 4)
+  data['memoryBlockNum'].labelTxt.config(text=f"Memory Address (Block {memoryBlockNum}): ")
   memoryEntry = data['memoryEntry'] # get the list of labeledBitString
   memory = data['memory'] # get reference to memory  
   for i in range(16):
-    address = memoryPageNum * 16 + i # calculate full address
+    address = memoryBlockNum * 16 + i # calculate full address
     # change label text to reflect new memory address of entry
     memoryEntry[i].text_set(text=f"Word {str(i)} ({address:#0{5}X}):".replace("X","x"))
     # update trigger function to write to the correct new memory address
     #   python default param hackery involved: https://tinyurl.com/2d7bdwp6
-    memoryEntry[i].trigs["memory_write"] = lambda a=address: memoryWrite(a)
+    memoryEntry[i].trigs["memory_write"] = lambda a=address: memoryWriteTrig(a)
     # set the entry to the true value of the memory
     memoryEntry[i].value_set(memory[address], trigger=False)
     
@@ -50,6 +50,7 @@ def programLoad():
   for i in ['PC','MAR','MBR','IR','MFR','CC','HALT']:
     data[i].value_set(0)
   data['memory'] = memory = [0]*2048
+  data['cache'] = [[0]*19 for i in range(16)]+[0]
   data['memory'][1] = 6 # as suggested in project description, delete by phase 3
   if len(fileName) > 0:
     content = []
@@ -78,16 +79,23 @@ def programLoad():
         print(f"Error loading: line {str(i+1)}'s value is out of bounds [0,65535], skipping.")
         continue
       memory[addr] = val
-  memoryPageUpdate()
+  memoryBlockUpdate()
+
+def guiMemoryJump(blockNum):
+  if not 'windowMemory' in data:
+    guiMemory()
+  else:
+    data['windowMemory'].after(1, lambda: data['windowMemory'].focus_force())
+  data['memoryBlockNum'].value_set(blockNum*16)
 
 def guiMemory():
   # start making interface for memory view/configuration
   # disable the open window button to prevent opening it again
   # GUI Structure:
   # windowMemory
-  # ├memoryPage
-  # │└memoryPageNum
-  # └memoryCont
+  # ├memoryBlockFrame
+  # │└memoryBlockNum
+  # └memoryContFrame
   #  └memoryEntry[0,15]
   
   if 'guiMemoryBtn' in data:
@@ -102,25 +110,25 @@ def guiMemory():
   style.map("TButton", foreground=[("disabled", "SystemWindowText")])
   style.configure("Courier.TLabel", font=('Courier', 12))
 
-  # create a page number navigator, only top padding is needed
-  memoryPage = ttk.Frame(windowMemory, padding=(0,10,0,0))
-  memoryPage.grid(column=0,row=0)
-  data['memoryPageNum'] = memoryPageNum = labeledBitString(12) \
-    .create(frame=memoryPage, text="Memory Address (Page 0): ", width=26, gap=4)
-  # disable some buttons because they don't correspond to valid page numbers
+  # create a block number navigator, only top padding is needed
+  memoryBlockFrame = ttk.Frame(windowMemory, padding=(0,10,0,0))
+  memoryBlockFrame.grid(column=0,row=0)
+  data['memoryBlockNum'] = memoryBlockNum = labeledBitString(12) \
+    .create(frame=memoryBlockFrame, text="Memory Address (Block 0): ", width=26)
+  # disable some buttons because they don't correspond to valid block numbers
   for i in [0,8,9,10,11]:
-    memoryPageNum.bits[i].btn.config(state=tkinter.DISABLED)
+    memoryBlockNum.bits[i].btn.config(state=tkinter.DISABLED)
   
   # create main body of memory editor
-  memoryCont = ttk.Frame(windowMemory, padding=10)
-  memoryCont.grid(column=0,row=1)
+  memoryContFrame = ttk.Frame(windowMemory, padding=10)
+  memoryContFrame.grid(column=0,row=1)
   data['memoryEntry'] = memoryEntry = [0]*16
   for i in range(16):
-    memoryEntry[i] = labeledBitString(16).create(frame=memoryCont, y=i, width=15)
+    memoryEntry[i] = labeledBitString(16).create(frame=memoryContFrame, y=i, width=15)
     
-  # add number navigator trigger and call once
-  memoryPageNum.trigs["page_update"] = memoryPageUpdate
-  memoryPageUpdate()
+  # add block number navigator trigger and call once
+  memoryBlockNum.trigs["block_num_update"] = memoryBlockUpdate
+  memoryBlockUpdate()
 
   # show the window, for use with PyCharm
   # see https://stackoverflow.com/questions/51253078/tkinter-isnt-working-with-pycharm/51261747
