@@ -1,3 +1,5 @@
+import tkinter
+from tkinter import ttk
 from CSCI6461_Project_classes import *
 from CSCI6461_Project_data import *
 from CSCI6461_Project_gui_memory import *
@@ -29,7 +31,7 @@ def splitInstructionLoadStore(instruction):
   i = (instruction >> 5) & 0b1
   address = instruction & 0b11111
   return opcode,r,ix,i,address
-  
+    
 def splitInstuctionArithmetic(instruction):
   # [instruction] 16-bit integer (0-65535)
   # splits into opcode(6), rx(2), ry(2) in that order
@@ -39,6 +41,18 @@ def splitInstuctionArithmetic(instruction):
   rx = (instruction >> 8) & 0b11
   ry = (instruction >> 6) & 0b11
   return opcode,rx,ry
+    
+def splitInstuctionShift(instruction):
+  # [instruction] 16-bit integer (0-65535)
+  # splits into opcode(6),r(2),al(1),lr(1),unused(2),count(4) in that order
+  # for arithmetic and logical instructions
+  # the unused(2) bits are ignored
+  opcode = instruction >> 10
+  r = (instruction >> 8) & 0b11
+  al = (instruction >> 7) & 0b1
+  lr = (instruction >> 6) & 0b1
+  count = instruction & 0b1111
+  return opcode,r,al,lr,count
   
 def LoadStoreInstExec(instruction):
   # execute load/store instructions (LDR/LDA/LDX/STR/STX)
@@ -167,6 +181,80 @@ def TransferInstExec(instruction):
     return -1
   else:
     return 0
+    
+def ArithmeticInstExec(instruction):
+  # execute Multiplication/Division instructions (MLT/DVD/TRR/AND/ORR/NOT)
+  # [instruction] 16-bit integer
+  opcode,rx,ry = splitInstuctionArithmetic(instruction)
+  upperRes,lowerRes,cc=0,0,0
+  rxValue = data["GPR"][rx].value()
+  ryValue = data["GPR"][ry].value()
+  
+  if opcode == 18 and rxValue==ryValue: # TRR
+    cc=0b0001
+    
+  if opcode == 17 and ryValue == 0: # Divide by 0
+    cc=0b0010
+  elif opcode in [16,17]:
+    if (rxValue >> 15) > 0:
+      rxValue -= (1 << 16)
+    if (ryValue >> 15) > 0:
+      ryValue -= (1 << 16)
+    if opcode == 16:  # MLT
+      upperRes = (rxValue * ryValue) // (1 << 16)
+      lowerRes = (rxValue * ryValue) % (1 << 16)
+    elif opcode == 17: # DVD
+      upperRes = rxValue // ryValue
+      lowerRes = rxValue % ryValue
+    # store the two values in the two registers
+    data["GPR"][rx].value_set(upperRes)
+    data["GPR"][rx + 1].value_set(lowerRes)
+
+  if opcode in [19,20,21]: # AND/ORR/NOT
+    if opcode == 19:
+      rxValue &= ryValue
+    elif opcode == 20:
+      rxValue |= ryValue
+    elif opcode == 21:
+      rxValue ^= (1<<16)-1
+    data["GPR"][rx].value_set(rxValue)
+  
+  # Set and Return cc
+  data["CC"].value_set(cc)
+  return cc
+  
+def ShiftInstExec(instruction):
+  opcode,r,al,lr,count = splitInstuctionShift(instruction)
+  value = data["GPR"][r].value()
+  sign,bitWidth,cc = 0,16,0
+  if al == 0: # Arithmetic Shift
+    bitWidth = 15 # only 15 bits for actual number
+    sign = (value >> 15) # get sign of number
+    value &= ((1<<15)-1) # remove sign from number
+  if lr == 1: # Left Shift
+    value = (value<<count) # SRC and RRC
+    print(f"{value:016b}")
+    overflowPart = (value >> bitWidth)
+    if overflowPart > 0:
+      print(f"{overflowPart:08b}")
+      cc=0b1000 # overflow
+      if opcode == 26: # RRC
+        value |= overflowPart
+    value &= ((1<<bitWidth)-1)
+  elif lr == 0: # Right Shift
+    value = (value<<(bitWidth-count)) # SRC and RRC
+    underflowPart = (value & ((1<<bitWidth)-1))
+    if underflowPart > 0:
+      cc=0b0100 # underflow
+      if opcode == 26: # RRC
+        value |= (underflowPart<<bitWidth)
+    value = (value >> bitWidth)
+  # Restore the sign bit for Arithmetic Shift
+  value |= sign<<15
+  # Set and Return result and cc
+  data["GPR"][r].value_set(value)
+  data["CC"].value_set(cc)
+  return cc
 
 def execute(instruction):
   # execute instruction num
@@ -181,13 +269,26 @@ def execute(instruction):
     return False
   elif opcode in [1,2,3,33,34]:
     return LoadStoreInstExec(instruction) >= 0
-  elif opcode in [4,5,6,7]:
+  elif opcode in range(4,8):
     return AddSubInstExec(instruction) >= 0
-  elif opcode in [8,9,10,11,12,13,14,15]:
+  elif opcode in range(8,16):
     return TransferInstExec(instruction) >= 0
+  elif opcode in range(16,22):
+    return ArithmeticInstExec(instruction) >= 0
+  elif opcode in [25,26]:
+    return ShiftInstExec(instruction) >=0
+  elif opcode in [49,50]:
+    return ioInstExec(instruction) >= 0
   else:
     fault(2)
     return False
+
+def singleStepTrig():
+  data['runBtn'].config(state=tkinter.DISABLED)
+  data['singleStepBtn'].config(state=tkinter.DISABLED)
+  singleStep()
+  data['runBtn'].config(state=tkinter.NORMAL)
+  data['singleStepBtn'].config(state=tkinter.NORMAL)
 
 def singleStep():
   # tries to run a single step
@@ -210,12 +311,18 @@ def singleStep():
   
 def multiStep(updateInterval=1):
   # "run", keeps calling singleStep until stopped
-  windowInterface = data['windowInterface']
+  # [updateInterval] integer > 0, how often would the interface update the displayed values
+  # disable the step and buttons, set RUN signal to 1
+  data['runBtn'].config(state=tkinter.DISABLED)
+  data['singleStepBtn'].config(state=tkinter.DISABLED)
   data['RUN'].value_set(1)
   updateStep = 0
-  while data['HALT'].value() == 0:
+  while data['HALT'].value() == 0 and data['RUN'].value() == 1:
     singleStep()
     if updateStep == 0:
-      windowInterface.update()
+      data['windowInterface'].update()
     updateStep = (updateStep+1)%updateInterval
+  # re-enable the step and buttons, set RUN signal to 0
   data['RUN'].value_set(0)
+  data['runBtn'].config(state=tkinter.NORMAL)
+  data['singleStepBtn'].config(state=tkinter.NORMAL)

@@ -98,16 +98,14 @@ class bitString:
     # [trigger] boolean, whether custom triggers will be called
     remainder = value
     for i in range(self.count):
-      if remainder >= (2 ** (self.count - i - 1)):
-        # change a bit to 1 to accomodate some of the remainder value
-        self.bits[i].v = 1
-        remainder -= (2 ** (self.count - i - 1))
-      else:
-        # this bit represents a value larger than current remainder
-        self.bits[i].v = 0
-      # update each bit button, but don't call their custom triggers
+      # the power represented by the bit
+      # 0 is 1, 1 is 2, 2 is 4, etc.
+      position = self.count-i-1
+      # set the bit according to the value in the remainder, 1 if non-zero and 0 if 0
+      # but don't call their custom triggers
       # (custom triggers for this case should be set for this bitString class instead)
-      self.bits[i].update(trigger=False)
+      self.bits[i].value_set(remainder & (1 << position), trigger=False)
+      remainder -= remainder & (1 << position)
     # call the custom triggers
     self.update(trigger=trigger)
     # returns the remainder of number that couldn't be placed in the string

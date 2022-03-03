@@ -2,6 +2,7 @@ import tkinter
 from tkinter import ttk, filedialog
 from CSCI6461_Project_classes import *
 from CSCI6461_Project_data import *
+from CSCI6461_Project_gui_cache import *
 
 def windowMemory_onClose():
   # trigger function when memory editor is closed
@@ -18,8 +19,16 @@ def memoryWriteTrig(address):
   # do nothing if memory editor isn't open
   if not 'windowMemory' in data:
     return
+  blockNum = address//16
+  wordNum = address%16
   # write the line in memory editor into memory
-  data['memory'][address] = data['memoryEntry'][address%16].value()
+  data['memory'][address] = data['memoryEntry'][wordNum].value()
+  # disable any cache line for this memory address
+  for i in range(16):
+    if data['cache'][i][17] == 1 and data['cache'][i][16] == blockNum:
+      # if tag matches and is initialized, disable by setting initialization bit to 0
+      data['cache'][i][17] = 0
+  cacheLineUpdate()
   
 def memoryBlockUpdate():
   # trigger function when memory editor block number changes
@@ -42,7 +51,10 @@ def memoryBlockUpdate():
     memoryEntry[i].value_set(memory[address], trigger=False)
     
 def programLoad():
+  # triggered when the Init button is clicked, tries to load a program
+  # open file dialog to select file
   fileName = filedialog.askopenfilename(title="Select File", initialdir=".")
+  # reset all registers, memory, cache to 0
   for i in range(4):
     data['GPR'][i].value_set(0)
   for i in range(1,4):
@@ -52,6 +64,7 @@ def programLoad():
   data['memory'] = memory = [0]*2048
   data['cache'] = [[0]*19 for i in range(16)]+[0]
   data['memory'][1] = 6 # as suggested in project description, delete by phase 3
+  # get content of file and write it into memory
   if len(fileName) > 0:
     content = []
     try:
@@ -79,6 +92,7 @@ def programLoad():
         print(f"Error loading: line {str(i+1)}'s value is out of bounds [0,65535], skipping.")
         continue
       memory[addr] = val
+  # trigger update to memories
   memoryBlockUpdate()
 
 def guiMemoryJump(blockNum):
@@ -90,7 +104,6 @@ def guiMemoryJump(blockNum):
 
 def guiMemory():
   # start making interface for memory view/configuration
-  # disable the open window button to prevent opening it again
   # GUI Structure:
   # windowMemory
   # ├memoryBlockFrame
@@ -98,6 +111,7 @@ def guiMemory():
   # └memoryContFrame
   #  └memoryEntry[0,15]
   
+  # disable the open window button to prevent opening it again
   if 'guiMemoryBtn' in data:
     data['guiMemoryBtn'].config(state=tkinter.DISABLED)
   # create a separate window to view/edit the memory

@@ -94,10 +94,11 @@ def guiCache():
   # windowCache
   # ├cacheLineFrame
   # │├cacheLineNum
-  # │└cacheNextNum
+  # │├cacheNextNum
+  # │└autoShowCacheBtn
   # ├cacheUtilFrame
   # │├guiMemoryJumpBtn
-  # │└autoShowCacheBtn
+  # │└cleanCacheLineBtn
   # ├cachePropertyFrame
   # │├cacheInit
   # │├cacheDirty
@@ -109,7 +110,7 @@ def guiCache():
     
   # create a separate window to view/edit the cache
   data['windowCache'] = windowCache = tkinter.Tk() # create the window
-  windowCache.title("CSCI6461 Project Machine Cache") # name the window
+  windowCache.title("CSCI6461 Project Machine Cache (Write-Back)") # name the window
   # if window is closed, destroy it
   windowCache.protocol("WM_DELETE_WINDOW", windowCache_onClose)
   # change disabled buttons to regular (black) text, label font to monospace
@@ -117,26 +118,31 @@ def guiCache():
   style.map("TButton", foreground=[("disabled", "SystemWindowText")])
   style.configure("Courier.TLabel", font=('Courier', 12))
 
-  # create a cache line number navigator, only top padding is needed
-  cacheLineFrame = ttk.Frame(windowCache, padding=(0,10,0,0))
+  # create a cache line number navigator, bottom padding is not needed
+  cacheLineFrame = ttk.Frame(windowCache, padding=(10,10,45,0))
   cacheLineFrame.grid(column=0,row=0)
   data['cacheLineNum'] = cacheLineNum = labeledBitString(4) \
     .create(frame=cacheLineFrame, width=13, numLabels=False)
   # create display for next cache line to be replaced
   data['cacheNextNum'] = cacheNextNum = labeledBitString(4) \
-    .create(frame=cacheLineFrame, text="Next Cache to Replace: ", x=6, padx=15, width=21, numLabels=False)
+    .create(frame=cacheLineFrame, text="Next Line to Replace: ", x=6, padx=5, width=19, numLabels=False)
+  # create a check button for automatically show latest changed cache
+  data['autoShowCacheBtn'] = autoShowCacheBtn = labeledBitString(1) \
+    .create(frame=cacheLineFrame, text="Show updates: ", \
+    x=11, padx=5, numLabels=False)
   
-  # create a cache utility row, only bottom padding is needed
-  cacheUtilFrame = ttk.Frame(windowCache)
+  # create a cache utility row, only side paddings are needed
+  cacheUtilFrame = ttk.Frame(windowCache, padding=(25,0,10,0))
   cacheUtilFrame.grid(column=0,row=1)
   # create a button to jump to the corresponding address in memory
   data['guiMemoryJumpBtn'] = guiMemoryJumpBtn = ttk.Button( \
     cacheUtilFrame, text="Show this block in memory")
   guiMemoryJumpBtn.grid(column=0,row=0)
-  # create a check button for automatically show latest changed cache
-  data['autoShowCacheBtn'] = autoShowCacheBtn = labeledBitString(1) \
-    .create(frame=cacheUtilFrame, text="Show latest cache update: ", \
-    x=2, padx=50, numLabels=False)
+  # create a button to clean the cache line (write it to memory)
+  data['cleanCacheLineBtn'] = cleanCacheLineBtn = ttk.Button( \
+    cacheUtilFrame, text="Clean current cache line (Write to memory)", \
+    command=cleanCacheLine)
+  cleanCacheLineBtn.grid(column=1,row=0, padx=76)
   
   # create a cache line properties display
   cachePropertyFrame = ttk.Frame(windowCache)
@@ -167,12 +173,21 @@ def guiCache():
   # see https://stackoverflow.com/questions/51253078/tkinter-isnt-working-with-pycharm/51261747
   # windowCache.mainloop()
 
-def cleanCacheLine(cacheLine, update=True):
+def cleanCacheLine(cacheLine=-1, update=True):
   # check if the give line in cache is clean
   # if not, clean it by saving its content to memory
   # since this is a write-back cache
   # this is the only place where memory gets written during simulation
+  # [cacheLine] integer in range [-1,15], denoting the cache line to clean
+  #   if cacheLine=-1 or is unspecified it tries to look for the current line on display
+  # [update] boolean, whether the cacheLine gui should update immeditaely afterwards
   cache = data['cache']
+  if cacheLine==-1:
+    if not 'windowCache' in data:
+      return # do nothing if cache editor is not open and cacheLine is not specified
+    cacheLine = data['cacheLineNum'].value()
+    # force clean the cache line
+    cache[cacheLine][17] = cache[cacheLine][18] = 1
   if cache[cacheLine][17] and cache[cacheLine][18]:
     # the line to use is both initialized and dirty
     blockAddr = cache[cacheLine][16] << 4
@@ -202,8 +217,8 @@ def loadCache(tag, update=True):
     # get pointer to next cache position to load
     cacheLine = cache[16]
     # clean cache line for overwriting, if it is not already clean
-    cleanCacheLine(cacheLine, update=False) # update ater
-    # write cache metadata (tag, init, dirty)
+    cleanCacheLine(cacheLine, update=False) # update later
+    # write cache metadata (tag, init)
     cache[cacheLine][16] = tag
     cache[cacheLine][17] = 1
     # read memory and write data to cache

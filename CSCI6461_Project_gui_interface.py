@@ -4,6 +4,7 @@ from CSCI6461_Project_classes import *
 from CSCI6461_Project_gui_memory import *
 from CSCI6461_Project_gui_cache import *
 from CSCI6461_Project_execution import *
+from CSCI6461_Project_gui_io import *
 from CSCI6461_Project_data import *
 
 def guiInterface():
@@ -64,71 +65,56 @@ def guiInterface():
   data['IR'] = labeledBitString(16).create(frame=registersMainFrame, text="IR:", x=0, y=3, gap=0)
   
   # create a frame inside controlsFrame to fit the condition registers
-  data['conditionsFrame'] = conditionsFrame = ttk.Frame(controlsFrame)
+  data['conditionsFrame'] = conditionsFrame = ttk.Frame(controlsFrame, padding=10)
   conditionsFrame.grid(column=0,row=2) # place the frame
   data['MFR'] = labeledBitString(4).create(
     frame=conditionsFrame, text="MFR:", x=0, numLabels=False)
   data['CC'] = labeledBitString(4).create(
-    frame=conditionsFrame, text="CC:", x=6, numLabels=False)
+    frame=conditionsFrame, text="CC:", x=6, padx=25, numLabels=False)
   data['HALT'] = labeledBitString(1).create(
-    frame=conditionsFrame, text="HALT:", x=12, numLabels=False)
+    frame=conditionsFrame, text="HALT:", x=12, padx=25, numLabels=False)
   data['RUN'] = labeledBitString(1).create(
-    frame=conditionsFrame, text="RUN:", x=15, numLabels=False)
-  
-  # create small spacers among condition registers
-  # and between condition registers and mainRegs/buttons, just to make things look better
-  spacerConditions1 = ttk.Label(conditionsFrame, text="", width=3)
-  spacerConditions1.grid(column=5,row=0)
-  spacerConditions2 = ttk.Label(conditionsFrame, text="", width=3)
-  spacerConditions2.grid(column=11,row=0)
-  spacerConditions3 = ttk.Label(conditionsFrame, text="", width=3)
-  spacerConditions3.grid(column=14,row=0)
-  spacerMains = ttk.Label(controlsFrame, text="")
-  spacerMains.grid(column=0,row=1)
-  spacerControls = ttk.Label(controlsFrame, text="")
-  spacerControls.grid(column=0,row=3)
+    frame=conditionsFrame, text="RUN:", x=15, padx=25, numLabels=False)
   
   # create a frame inside controlsFrame to fit all the command buttons
   data["optionsFrame"] = optionsFrame = ttk.Frame(controlsFrame)
   optionsFrame.grid(column=0,row=4)
   # button for single stepping execution
   data['singleStepBtn'] = singleStepBtn = ttk.Button( \
-    optionsFrame, text="Step", width = 8, command=singleStep)
+    optionsFrame, text="Step", width = 8, command=singleStepTrig)
   singleStepBtn.grid(column=0,row=0)
   # button for continuous execution
   data['runBtn'] = runBtn = ttk.Button( \
     optionsFrame, text="Run", width = 8, command=multiStep)
-  runBtn.grid(column=1,row=0)
-  # button for store button
+  runBtn.grid(column=0,row=1)
+  # button for store
   data['storeBtn'] = storeBtn = ttk.Button( \
     optionsFrame, text="Store", width = 8, command=lambda: store(plus=False))
-  storeBtn.grid(column=3,row=0)
-  # button for st+ button
+  storeBtn.grid(column=1,row=0,padx=5)
+  # button for st+
   data['storePlusBtn'] = storePlusBtn = ttk.Button( \
     optionsFrame, text="St+", width = 8, command=lambda: store(plus=True))
-  storePlusBtn.grid(column=4,row=0)
-  # button for load button
-  data['loadBtn'] = loadBtn = ttk.Button( \
-    optionsFrame, text="Load", width = 8, command=lambda: readFromMemory(data['MAR'].value(), indirect=False))
-  loadBtn.grid(column=5,row=0)
+  storePlusBtn.grid(column=1,row=1)
+  # button for opening I/O Panel
+  data['guiIoBtn'] = guiIoBtn = ttk.Button( \
+    optionsFrame, text="I/O", width = 8, command=guiIo)
+  guiIoBtn.grid(column=2,row=0,padx=5)
   # button for opening Loading Memory
   data['programLoadBtn'] = programLoadBtn = ttk.Button( \
     optionsFrame, text="Initialize", width = 8, command=programLoad)
-  programLoadBtn.grid(column=7,row=0)
+  programLoadBtn.grid(column=3,row=0,padx=5)
+  # button for load
+  data['loadBtn'] = loadBtn = ttk.Button( \
+    optionsFrame, text="Load", width = 8, command=lambda: readFromMemory(data['MAR'].value(), indirect=False))
+  loadBtn.grid(column=3,row=1)
   # button for opening Memory Editor
   data['guiMemoryBtn'] = guiMemoryBtn = ttk.Button( \
     optionsFrame, text="Memory", width = 8, command=guiMemory)
-  guiMemoryBtn.grid(column=8,row=0)
+  guiMemoryBtn.grid(column=4,row=0,padx=5)
   # button for opening Cache Editor
   data['guiCacheBtn'] = guiCacheBtn = ttk.Button( \
     optionsFrame, text="Cache", width = 8, command=guiCache)
-  guiCacheBtn.grid(column=9,row=0)
-  
-  # create small spacers between some buttons
-  spacerRun = ttk.Label(optionsFrame, text="", width=2)
-  spacerRun.grid(column=2, row=0)
-  spacerLoad = ttk.Label(optionsFrame, text="", width=2)
-  spacerLoad.grid(column=6, row=0)
+  guiCacheBtn.grid(column=4,row=1)
 
   # show the window, for use with PyCharm
   # see https://stackoverflow.com/questions/51253078/tkinter-isnt-working-with-pycharm/51261747
