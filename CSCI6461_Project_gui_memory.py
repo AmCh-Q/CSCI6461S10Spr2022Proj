@@ -2,7 +2,8 @@ import tkinter
 from tkinter import ttk, filedialog
 from CSCI6461_Project_classes import *
 from CSCI6461_Project_data import *
-from CSCI6461_Project_gui_cache import *
+from CSCI6461_Project_gui_cache import cacheLineUpdate
+from CSCI6461_Project_gui_io import ioUpdate
 
 def windowMemory_onClose():
   # trigger function when memory editor is closed
@@ -63,6 +64,10 @@ def programLoad():
     data[i].value_set(0)
   data['memory'] = memory = [0]*2048
   data['cache'] = [[0]*19 for i in range(16)]+[0]
+  data['printText'] = ""
+  data['inputText'] = ""
+  # trigger update to io
+  ioUpdate()
   data['memory'][1] = 6 # as suggested in project description, delete by phase 3
   # get content of file and write it into memory
   if len(fileName) > 0:
@@ -74,7 +79,9 @@ def programLoad():
       content = []
     for i in range(len(content)):
       line = content[i].split()
-      if len(line) < 2:
+      if len(line) < 1:
+        continue
+      elif len(line) < 2:
         print(f"Error loading: line {str(i+1)} has {str(len(line))}"\
           +" terms when it is supposed to have 2, skipping.")
         continue
@@ -88,7 +95,7 @@ def programLoad():
       if addr > 2047 or addr < 0:
         print(f"Error loading: line {str(i+1)}'s address is out of bounds [0,2047], skipping.")
         continue
-      if val > 65535 or val < 0:
+      elif val > 65535 or val < 0:
         print(f"Error loading: line {str(i+1)}'s value is out of bounds [0,65535], skipping.")
         continue
       memory[addr] = val

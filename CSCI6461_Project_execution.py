@@ -123,9 +123,9 @@ def AddSubInstExec(instruction):
     value = gprvalue - value
     
   if value >= (1 << 15): # value overflowed and is now a negative number, set cc(0) to 1
-    cc |= 0b1000 # using bitwise OR to to set cc(0)
+    cc = 0b1000 # using bitwise OR to to set cc(0)
   elif value < (-1 << 15): # value underflowed and is now a positive number, set cc(1) to 1
-    cc |= 0b0100 # using bitwise OR to to set cc(1)
+    cc = 0b0100 # using bitwise OR to to set cc(1)
     
   # using modulo to roll number back to unsigned [0,65535] then set GPR
   data["GPR"][r].value_set(value%(1<<16))
@@ -191,10 +191,10 @@ def ArithmeticInstExec(instruction):
   ryValue = data["GPR"][ry].value()
   
   if opcode == 18 and rxValue==ryValue: # TRR
-    cc=0b0001
+    cc=0b0001 # equal
     
-  if opcode == 17 and ryValue == 0: # Divide by 0
-    cc=0b0010
+  if opcode == 17 and ryValue == 0:
+    cc=0b0010 # Divide by 0
   elif opcode in [16,17]:
     if (rxValue >> 15) > 0:
       rxValue -= (1 << 16)
@@ -206,6 +206,8 @@ def ArithmeticInstExec(instruction):
     elif opcode == 17: # DVD
       upperRes = rxValue // ryValue
       lowerRes = rxValue % ryValue
+    if upperRes < 0:
+      upperRes += (1 << 16)
     # store the two values in the two registers
     data["GPR"][rx].value_set(upperRes)
     data["GPR"][rx + 1].value_set(lowerRes)
@@ -224,33 +226,39 @@ def ArithmeticInstExec(instruction):
   return cc
   
 def ShiftInstExec(instruction):
+  # Execute Shift instructions (SRC/RRC)
+  # [instruction] 16-bit integer
   opcode,r,al,lr,count = splitInstuctionShift(instruction)
   value = data["GPR"][r].value()
-  sign,bitWidth,cc = 0,16,0
-  if al == 0: # Arithmetic Shift
-    bitWidth = 15 # only 15 bits for actual number
-    sign = (value >> 15) # get sign of number
-    value &= ((1<<15)-1) # remove sign from number
-  if lr == 1: # Left Shift
-    value = (value<<count) # SRC and RRC
-    print(f"{value:016b}")
-    overflowPart = (value >> bitWidth)
-    if overflowPart > 0:
-      print(f"{overflowPart:08b}")
-      cc=0b1000 # overflow
-      if opcode == 26: # RRC
-        value |= overflowPart
-    value &= ((1<<bitWidth)-1)
-  elif lr == 0: # Right Shift
-    value = (value<<(bitWidth-count)) # SRC and RRC
-    underflowPart = (value & ((1<<bitWidth)-1))
-    if underflowPart > 0:
-      cc=0b0100 # underflow
-      if opcode == 26: # RRC
-        value |= (underflowPart<<bitWidth)
-    value = (value >> bitWidth)
-  # Restore the sign bit for Arithmetic Shift
-  value |= sign<<15
+  cc,overflowPart,negative=0,0,False
+  
+  if al==0 and (value >> 15) > 0:
+    # if arithmetic shift, and the sign bit is 1
+    # it is considered as a negative number
+    value %= 1 << 15
+    negative = True
+  if lr == 0: # Right shift
+    bottomPart = value % (1<<count) # get the shifted away bits
+    if opcode == 26: # RRC, shift bottomPart to correct place for overflowPart
+      overflowPart = bottomPart << (15+al-count)
+    else: # SRC
+      if bottomPart > 0: # SRC underflowed
+        cc = 0b0100
+      if negative: # arithmetic shifting negative number, fill with 1s
+        overflowPart = ((1<<count) - 1) << (15+al-count)
+    value = value >> count
+  else: # Left shift
+    value = value << count
+    topPart = value >> (15+al) # get the shifted away bits
+    if opcode == 26: # RRC, set overflowPart
+      overflowPart = topPart
+    elif topPart > 0: # SRC overflowed
+      cc = 0b1000
+    value %= 1<<(15+al)
+  value |= overflowPart
+  if negative: # convert negative number back
+    value |= 1<<15
+    
   # Set and Return result and cc
   data["GPR"][r].value_set(value)
   data["CC"].value_set(cc)
@@ -277,7 +285,7 @@ def execute(instruction):
     return ArithmeticInstExec(instruction) >= 0
   elif opcode in [25,26]:
     return ShiftInstExec(instruction) >=0
-  elif opcode in [49,50]:
+  elif opcode in [49,50,51]:
     return ioInstExec(instruction) >= 0
   else:
     fault(2)

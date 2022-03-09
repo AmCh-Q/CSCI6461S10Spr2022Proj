@@ -2,7 +2,6 @@ import tkinter
 from tkinter import ttk
 from CSCI6461_Project_classes import *
 from CSCI6461_Project_data import *
-from CSCI6461_Project_gui_memory import *
 
 # cache structure:
 # data['cache']
@@ -78,6 +77,7 @@ def cacheLineUpdate():
   cacheDirty.value_set(cache[lineNum][18], trigger=False)
   
   # update destination when the guiMemoryJumpBtn is triggered to new line number
+  from CSCI6461_Project_gui_memory import guiMemoryJump
   data['guiMemoryJumpBtn'].config(command=lambda a=lineNum: guiMemoryJump(a))
 
 def cache_next_update():
@@ -181,6 +181,7 @@ def cleanCacheLine(cacheLine=-1, update=True):
   # [cacheLine] integer in range [-1,15], denoting the cache line to clean
   #   if cacheLine=-1 or is unspecified it tries to look for the current line on display
   # [update] boolean, whether the cacheLine gui should update immeditaely afterwards
+  from CSCI6461_Project_gui_memory import memoryBlockUpdate
   cache = data['cache']
   if cacheLine==-1:
     if not 'windowCache' in data:
@@ -299,6 +300,7 @@ def writeToMemory(address, value, indirect=False, checkReserve=True):
   #   (normally can't write to memory location 0-5)
   # returns -(fault ID)-1 if fault occurs
   # otherwise return 0
+  from CSCI6461_Project_gui_memory import memoryBlockUpdate
   
   # get the effective memory address into MAR, update MBR as needed
   if address > 2047 or address < 0:
