@@ -82,25 +82,27 @@ def programLoad():
       if len(line) < 1:
         continue
       elif len(line) < 2:
-        print(f"Error loading: line {str(i+1)} has {str(len(line))}"\
+        print(f"Warning: line {str(i+1)} has {str(len(line))}"\
           +" terms when it is supposed to have 2, skipping.")
         continue
       addr,val = 0,0
       try:
         addr,val = int(line[0],16),int(line[1],16)
       except Exception:
-        print(f"Error loading: line {str(i+1)}" \
+        print(f"Warning: line {str(i+1)}" \
           +"'s content does not appear to be hexadecimal, skipping.")
         continue
       if addr > 2047 or addr < 0:
-        print(f"Error loading: line {str(i+1)}'s address is out of bounds [0,2047], skipping.")
+        print(f"Warning: line {str(i+1)}'s address is out of bounds [0,2047], skipping.")
         continue
       elif val > 65535 or val < 0:
-        print(f"Error loading: line {str(i+1)}'s value is out of bounds [0,65535], skipping.")
+        print(f"Warning: line {str(i+1)}'s value is out of bounds [0,65535], skipping.")
         continue
       memory[addr] = val
   # trigger update to memories
   memoryBlockUpdate()
+  # trigger update to cache
+  cacheLineUpdate()
 
 def guiMemoryJump(blockNum):
   if not 'windowMemory' in data:

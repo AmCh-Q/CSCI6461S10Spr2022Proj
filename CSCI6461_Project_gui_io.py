@@ -97,6 +97,7 @@ def ioPrint(string, newLine=False):
   # [newLine] boolean, whether the print should be in its own line
   if 'windowIo' not in data:
     guiIo()
+    data['windowIo'].after(1, lambda: data['windowIo'].focus_force()) # force focus window
   ioPrinterText = data['ioPrinterText'] # get the printer widget
   # enable editing to write changes
   ioPrinterText.config(state=tkinter.NORMAL)
@@ -114,19 +115,21 @@ def ioPrint(string, newLine=False):
 def ioKey():
   # Get a character from the console keyboard
   # returns the string
+  if 'ioKeyboardText' in data:
+    # get the full string of the keyboard widget
+    # the last character is always '\n' even when widget is empty so we ignore that character
+    # see https://tkdocs.com/tutorial/text.html
+    data['inputText'] = data['ioKeyboardText'].get('1.0','end-1c')
+  if len(data['inputText']) > 0:
+    character = data['inputText'][0]
+    data['inputText'] = data['inputText'][1:]
+    if 'ioKeyboardText' in data:
+      data['ioKeyboardText'].delete('1.0') # remove the first character from Keyboard
+    return ord(character)
   if 'windowIo' not in data:
     guiIo()
-  ioKeyboardText = data['ioKeyboardText'] # get the keyboard widget
-  # get the full string of the keyboard widget
-  # the last character is always '\n' even when widget is empty so we ignore that character
-  # see https://tkdocs.com/tutorial/text.html
-  text = ioKeyboardText.get('1.0','end-1c')
-  if len(text) == 0:
-    return 0
-  character = text[0] # save the first character
-  ioKeyboardText.delete('1.0') # remove the first character from Keyboard
-  data['inputText'] = ioKeyboardText.get('1.0','end-1c')
-  return ord(character)
+    data['windowIo'].after(1, lambda: data['windowIo'].focus_force()) # force focus window
+  return 0
 
 def ioInstExec(instruction):
   opcode,r,devid = splitInstuctionIo(instruction)
@@ -142,8 +145,16 @@ def ioInstExec(instruction):
   elif opcode == 51: # CHK instruction
     value = 0
     if devid == 0: # console keyboard
+      if 'ioKeyboardText' in data:
+        data['inputText'] = data['ioKeyboardText'].get('1.0','end-1c')
       value = len(data['inputText']) # get length
+      if value == 0: # force focus window to ask for input
+        if 'windowIo' not in data:
+          guiIo()
+          data['windowIo'].after(1, lambda: data['windowIo'].focus_force()) # force focus window
     elif devid == 1: # console printer
+      if 'ioPrinterText' in data:
+        data['printText'] = data['ioPrinterText'].get('1.0','end-1c')
       value = len(data['printText']) # get length
     data["GPR"][r].value_set(value % (1<<16)) # incase of overflow, truncate the bits
   return 0

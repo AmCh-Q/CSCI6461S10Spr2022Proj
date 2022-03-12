@@ -78,16 +78,12 @@ while True:
   if opcode in [1,2,3,33,34,8,9,10,11,12,13,14,15,4,5,6,7,27,28,29,30,31,40,41]:
     if opcode in [13]:
       address = tokens[1]
-    if opcode in [33,34,6,7]:
+    if opcode in [33,34,11,12,6,7]:
       address = tokens[2]
-    if opcode in [11,12]:
-      address = tokens[2]
-    if opcode in [4,5,27,28,29,30,31,40,41]:
-      address = tokens[3]
     if opcode in [1,2,3,8,9,10,14,15,4,5,27,28,29,30,31,40,41]:
       address = tokens[3]
     instruction += int(address)
-  if opcode in [1,2,3,33,34,8,9,10,11,14,15,4,5]:
+  if opcode in [1,2,3,33,34,8,9,10,11,12,14,15,4,5]:
     if opcode in [33,34,11,12]:
       i = tokens[3]
     if opcode in [1,2,3,8,9,10,14,15,4,5]:

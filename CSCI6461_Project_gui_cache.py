@@ -165,9 +165,10 @@ def guiCache():
   # add cache line navigator trigger and call once
   cacheLineNum.trigs["line_num_update"] = cacheLineUpdate
   cacheLineUpdate()
-  # add cache replace display trigger and call once
+  # add cache replace display trigger
   cacheNextNum.trigs["next_line_update"] = cache_next_update
-  cache_next_update()
+  # load next cache line to avoid the next value being reset
+  cacheNextNum.value_set(data['cache'][16], False)
 
   # show the window, for use with PyCharm
   # see https://stackoverflow.com/questions/51253078/tkinter-isnt-working-with-pycharm/51261747
@@ -217,6 +218,7 @@ def loadCache(tag, update=True):
   if cacheLine == -1: # cache miss
     # get pointer to next cache position to load
     cacheLine = cache[16]
+    # print(f"Writing to cache line {cacheLine}")
     # clean cache line for overwriting, if it is not already clean
     cleanCacheLine(cacheLine, update=False) # update later
     # write cache metadata (tag, init)
@@ -272,6 +274,7 @@ def readFromMemory(address, indirect=False):
   # [direct] boolean, specifies if it is a direct access
   # return -(fault ID)-1 if fault occurs
   # return [content] integer, the value stored in the memory location
+  from CSCI6461_Project_execution import fault
   if address > 2047 or address < 0:
     fault(3) # Illegal Memory Address (memory installed)
     return -4
@@ -301,6 +304,7 @@ def writeToMemory(address, value, indirect=False, checkReserve=True):
   # returns -(fault ID)-1 if fault occurs
   # otherwise return 0
   from CSCI6461_Project_gui_memory import memoryBlockUpdate
+  from CSCI6461_Project_execution import fault
   
   # get the effective memory address into MAR, update MBR as needed
   if address > 2047 or address < 0:

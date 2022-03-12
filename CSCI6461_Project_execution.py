@@ -122,10 +122,8 @@ def AddSubInstExec(instruction):
   elif opcode in [5,7]: # SUB insturction (SMR/SIR)
     value = gprvalue - value
     
-  if value >= (1 << 15): # value overflowed and is now a negative number, set cc(0) to 1
+  if value >= (1 << 15) or value < (-1 << 15): # value overflowed, set cc(0) to 1
     cc = 0b1000 # using bitwise OR to to set cc(0)
-  elif value < (-1 << 15): # value underflowed and is now a positive number, set cc(1) to 1
-    cc = 0b0100 # using bitwise OR to to set cc(1)
     
   # using modulo to roll number back to unsigned [0,65535] then set GPR
   data["GPR"][r].value_set(value%(1<<16))
@@ -317,20 +315,22 @@ def singleStep():
   address += 1
   data['PC'].value_set(address)
   
-def multiStep(updateInterval=1):
+def multiStep(updateInterval=1,inverse=False):
   # "run", keeps calling singleStep until stopped
   # [updateInterval] integer > 0, how often would the interface update the displayed values
-  # disable the step and buttons, set RUN signal to 1
-  data['runBtn'].config(state=tkinter.DISABLED)
+  # [inverse] boolean, whether the value of the run button should be taken as its inverse
+  if not inverse and data['RUN'].value() == 0:
+    data['RUN'].value_set(1,False)
+  elif not inverse and data['RUN'].value() == 1:
+    data['RUN'].value_set(0,False)
+  # disable the step button, set RUN signal to 1
   data['singleStepBtn'].config(state=tkinter.DISABLED)
-  data['RUN'].value_set(1)
   updateStep = 0
   while data['HALT'].value() == 0 and data['RUN'].value() == 1:
     singleStep()
     if updateStep == 0:
       data['windowInterface'].update()
     updateStep = (updateStep+1)%updateInterval
-  # re-enable the step and buttons, set RUN signal to 0
-  data['RUN'].value_set(0)
-  data['runBtn'].config(state=tkinter.NORMAL)
+  # re-enable the step button, set RUN signal to 0
+  data['RUN'].value_set(0,False)
   data['singleStepBtn'].config(state=tkinter.NORMAL)

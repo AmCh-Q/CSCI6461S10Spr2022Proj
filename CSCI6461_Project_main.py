@@ -8,6 +8,7 @@ def main():
   
   # create the gui window, writes to data
   guiInterface()
+  data['windowInterface'].after(1, lambda: data['windowInterface'].focus_force())
 
   # a temporary (very janky) field console to run custom commands
   # this is not safe--there's very little preventing you from going "rm -rf" here

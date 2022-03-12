@@ -75,6 +75,7 @@ def guiInterface():
     frame=conditionsFrame, text="HALT:", x=12, padx=25, numLabels=False)
   data['RUN'] = labeledBitString(1).create(
     frame=conditionsFrame, text="RUN:", x=15, padx=25, numLabels=False)
+  data['RUN'].trigs["multiStep_trigger"] = lambda: multiStep(inverse=True)
   
   # create a frame inside controlsFrame to fit all the command buttons
   data["optionsFrame"] = optionsFrame = ttk.Frame(controlsFrame)
