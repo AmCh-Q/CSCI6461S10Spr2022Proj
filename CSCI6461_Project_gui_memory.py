@@ -1,5 +1,5 @@
 import tkinter
-from tkinter import ttk, filedialog
+from tkinter import ttk
 from CSCI6461_Project_classes import *
 from CSCI6461_Project_data import *
 
