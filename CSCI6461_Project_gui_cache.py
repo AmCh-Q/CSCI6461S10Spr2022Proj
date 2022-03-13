@@ -78,7 +78,7 @@ def cacheLineUpdate():
   
   # update destination when the guiMemoryJumpBtn is triggered to new line number
   from CSCI6461_Project_gui_memory import guiMemoryJump
-  data['guiMemoryJumpBtn'].config(command=lambda a=lineNum: guiMemoryJump(a))
+  data['guiMemoryJumpBtn'].config(command=lambda a=cache[lineNum][16]: guiMemoryJump(a))
 
 def cache_next_update():
   # trigger function when cache editor's next replacement cache line number changes

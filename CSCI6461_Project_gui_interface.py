@@ -120,6 +120,59 @@ def guiInterface():
   # show the window, for use with PyCharm
   # see https://stackoverflow.com/questions/51253078/tkinter-isnt-working-with-pycharm/51261747
   # windowInterface.mainloop()
+    
+def programLoad():
+  # triggered when the Init button is clicked, tries to load a program
+  # open file dialog to select file
+  fileName = filedialog.askopenfilename(title="Select File", initialdir=".")
+  # reset all registers, memory, cache to 0
+  for i in range(4):
+    data['GPR'][i].value_set(0)
+  for i in range(1,4):
+    data['IXR'][i].value_set(0)
+  for i in ['PC','MAR','MBR','IR','MFR','CC','HALT']:
+    data[i].value_set(0)
+  data['memory'] = memory = [0]*2048
+  data['cache'] = [[0]*19 for i in range(16)]+[0]
+  data['printText'] = ""
+  data['inputText'] = ""
+  # trigger update to io
+  ioUpdate()
+  data['memory'][1] = 6 # as suggested in project description, delete by phase 3
+  # get content of file and write it into memory
+  if len(fileName) > 0:
+    content = []
+    try:
+      content = open(fileName,"r").read().splitlines()
+    except Exception:
+      print(f"Error loading: file '{fileName}' does not appear to be a readable text file.")
+      content = []
+    for i in range(len(content)):
+      line = content[i].split()
+      if len(line) < 1:
+        continue
+      elif len(line) < 2:
+        print(f"Warning: line {str(i+1)} has {str(len(line))}"\
+          +" terms when it is supposed to have 2, skipping.")
+        continue
+      addr,val = 0,0
+      try:
+        addr,val = int(line[0],16),int(line[1],16)
+      except Exception:
+        print(f"Warning: line {str(i+1)}" \
+          +"'s content does not appear to be hexadecimal, skipping.")
+        continue
+      if addr > 2047 or addr < 0:
+        print(f"Warning: line {str(i+1)}'s address is out of bounds [0,2047], skipping.")
+        continue
+      elif val > 65535 or val < 0:
+        print(f"Warning: line {str(i+1)}'s value is out of bounds [0,65535], skipping.")
+        continue
+      memory[addr] = val
+  # trigger update to memories
+  memoryBlockUpdate()
+  # trigger update to cache
+  cacheLineUpdate()
   
 def store(plus=False):
   # a function to be called for store and st+ button clicks

@@ -19,16 +19,18 @@ def ioUpdate():
   if 'windowIo' not in data:
     return
   ioPrinterText = data['ioPrinterText'] # get the printer widget
-  ioPrinterText.config(state=tkinter.NORMAL) # Enable editing
-  ioPrinterText.delete('1.0', tkinter.END)
-  ioPrinterText.insert('1.0', data['printText'])
-  ioPrinterText.config(state=tkinter.DISABLED) # Disable editing
-  ioPrinterText.yview(tkinter.END) # scroll to the very end to show the text
+  if ioPrinterText.get('1.0','end-1c') != data['printText']:
+    ioPrinterText.config(state=tkinter.NORMAL) # Enable editing
+    ioPrinterText.delete('1.0', tkinter.END)
+    ioPrinterText.insert('1.0', data['printText'])
+    ioPrinterText.config(state=tkinter.DISABLED) # Disable editing
+    ioPrinterText.yview(tkinter.END) # scroll to the very end to show the text
   
   ioKeyboardText = data['ioKeyboardText'] # get the keyboard widget
-  ioKeyboardText.delete('1.0', tkinter.END)
-  ioKeyboardText.insert('1.0', data['inputText'])
-  ioKeyboardText.yview(tkinter.END) # scroll to the very end to show the text
+  if ioKeyboardText.get('1.0','end-1c') != data['inputText']:
+    ioKeyboardText.delete('1.0', tkinter.END)
+    ioKeyboardText.insert('1.0', data['inputText'])
+    ioKeyboardText.yview(tkinter.END) # scroll to the very end to show the text
 
 def guiIo():
   # start making interface for input/output
