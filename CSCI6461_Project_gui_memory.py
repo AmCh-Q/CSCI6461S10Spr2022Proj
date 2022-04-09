@@ -16,6 +16,7 @@ def windowMemory_onClose():
 def memoryWriteTrig(address):
   # trigger function when memory editor edits memory value
   # do nothing if memory editor isn't open
+  from CSCI6461_Project_gui_cache import cacheLineUpdate
   if not 'windowMemory' in data:
     return
   blockNum = address//16

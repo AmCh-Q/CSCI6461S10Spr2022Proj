@@ -21,6 +21,22 @@ def HLT():
   # stops the machine by setting HALT register to 1
   data['HALT'].value_set(1)
   
+def Trap(trapcode):
+  # [trapcode] 4-bit integer (0-15)
+  # store PC+1 value to memory location 2
+  pc = data['PC'].value()+1
+  writeToMemory(2, pc, checkReserve=False)
+  # Get address of table at memory location 0
+  tableaddress = readFromMemory(0)
+  # Select trap routine by trapcode index
+  traproutine = tableaddress + trapcode
+  # get instruction code
+  instruction = readFromMemory(traproutine)
+  execute(instruction)
+  # fetch PC+1 from memory(2) again
+  PC = readFromMemory(2)
+  data['PC'].value_set(pc)
+  
 def splitInstructionLoadStore(instruction):
   # [instruction] 16-bit integer (0-65535)
   # splits into opcode(6), r(2), ix(2), i(1), address(5) in that order
@@ -151,7 +167,7 @@ def TransferInstExec(instruction):
     value = data["GPR"][r].value()
     if (value >> 15) > 0: # if the sign bit is 1, it is considered as a negative number
       value -= (1 << 16)
-    elif opcode == 8: #JZ
+    if opcode == 8: #JZ
       jump = (value == 0) # jump if zero
     elif opcode == 9: #JNE
       jump = (value != 0) # jump if nonzero
@@ -161,10 +177,10 @@ def TransferInstExec(instruction):
       jump = (value>0) # jump if positive after decrement
     elif opcode == 15: #JGE
       jump = (value>=0) # jump if non-negative
-  if opcode == 10: # JCC
+  elif opcode == 10: # JCC
     cc = data["CC"].value()
-    jump = ((cc & (0b1 << (3-ix))) > 0) # bitwise OR to get cc(ix), then check if it is >0
-  if opcode in [11,12]: # JMA/JSR
+    jump = ((cc & (0b1 << (3-r))) > 0) # bitwise OR to get cc(r), then check if it is >0
+  elif opcode in [11,12]: # JMA/JSR
     if opcode == 12: # JSR
       pc = data["PC"].value()
       data["GPR"][3].value_set(pc+1)
@@ -173,7 +189,7 @@ def TransferInstExec(instruction):
   if jump: # branching, setting PC to EA
     if ix > 0: # Need to Calculate Effective Address with IXR
       EA += data["IXR"][ix].value()
-    if i>0: # indirection
+    if i > 0: # indirection
       EA = readFromMemory(EA, indirect=False)
     data["PC"].value_set(EA)
     return -1
@@ -266,12 +282,15 @@ def execute(instruction):
   # execute instruction num
   # [instruction] 16-bit integer (0-65535)
   # returns True if executed normally
-  # returns False if halted or faulted or branched
+  # returns False if halted or faulted or branched or trapped
     
   # gets opcode
   opcode = instruction >> 10
   if opcode == 0:
     HLT()
+    return False
+  elif opcode == 24:
+    Trap(instruction%(1<<4))
     return False
   elif opcode in [1,2,3,33,34]:
     return LoadStoreInstExec(instruction) >= 0
