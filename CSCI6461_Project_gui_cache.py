@@ -196,8 +196,8 @@ def cleanCacheLine(cacheLine=-1, update=True):
     for i in range(16): # save each word to memory
       data['memory'][blockAddr+i] = cache[cacheLine][i]
     memoryBlockUpdate()
-  # line is now clean
-  cache[cacheLine][18] = 0
+  # line is now clean, uninitialize it
+  cache[cacheLine][17] = cache[cacheLine][18] = 0
   if update:
     cacheLineUpdate()
   

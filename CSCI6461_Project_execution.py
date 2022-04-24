@@ -1,4 +1,4 @@
-import tkinter
+import tkinter, math
 from tkinter import ttk
 from CSCI6461_Project_classes import *
 from CSCI6461_Project_data import *
@@ -37,14 +37,18 @@ def Trap(trapcode):
   PC = readFromMemory(2)
   data['PC'].value_set(pc)
   
-def splitInstructionLoadStore(instruction):
+def splitInstructionLoadStore(instruction, fp=False):
   # [instruction] 16-bit integer (0-65535)
   # splits into opcode(6), r(2), ix(2), i(1), address(5) in that order
   # for load/store instructions below
   opcode = instruction >> 10
   r = (instruction >> 8) & 0b11
-  ix = (instruction >> 6) & 0b11
-  i = (instruction >> 5) & 0b1
+  if fp:
+    i = (instruction >> 7) & 0b1
+    ix = (instruction >> 5) & 0b11
+  else:
+    ix = (instruction >> 6) & 0b11
+    i = (instruction >> 5) & 0b1
   address = instruction & 0b11111
   return opcode,r,ix,i,address
     
@@ -70,6 +74,75 @@ def splitInstuctionShift(instruction):
   count = instruction & 0b1111
   return opcode,r,al,lr,count
   
+def rawtofloat(value):
+  # convert a 16-bit bit integer ("raw float") to a python float
+  # [value] 16-bit integer (as defined in project description)
+  # returns a python float number
+  sign = value >> 15
+  exponentsign = (value >> 14) & 0b1
+  exponentman = (value >> 8) & ((1 << 6) - 1)
+  mantissa = value & ((1 << 8) - 1)
+  if (exponentsign, exponentman) == (1,0):
+    # special case: if exponent is 0b1000000, that is treated as +64
+    # minus 8 to accomodate the fact that the mantissa is left shifted by 8
+    exponent = 56
+  else:
+    # otherwise, it is the normal signed number
+    # minus 8 to accomodate the fact that the mantissa is left shifted by 8
+    exponent = (1 - 2 * exponentsign) * exponentman - 8
+  if exponent == -63:
+    # special case: if exponent is minimal (-63) the number is denormalized
+    # don't append 1 at front, and instead make it -62
+    exponent = -62
+  else:
+    # otherwise, append a 1 to the front of the number
+    mantissa += 1<<8
+  if exponent > 0:
+    # positive exponent, multiply to get large number
+    mantissa *= 1<<exponent
+  elif exponent < 0:
+    # negative exponent, divide to get small number
+    mantissa /= 1<<(-exponent)
+  # return with sign bit
+  return mantissa * (1-2*sign)
+
+def floattoraw(value):
+  # convert a python float to a 16-bit raw integer of bits ("raw float")
+  # [value] a python float number
+  # returns a 16-bit integer (as defined in project description)
+  # mantissa is rounded
+  sign = 0
+  if abs(value) < 1/(1<<72) : # special case: value is 0
+    if value < 0:
+      return 0b1111111100000000
+    else:
+      return 0b0111111100000000
+  elif value < 0: # special case: negative value
+    sign = 1
+    value = -value
+  # get the exponent value
+  exponent = math.floor(math.log(value,2))
+  if exponent < -63: # special case: denormalized number
+    exponent = -63
+  if exponent < 0:
+    exponentsign = 1
+    exponentman = (-exponent) & ((1 << 6) - 1)
+  elif exponent >= 64:
+    exponentsign = 1
+    exponentman = 0
+  else:
+    exponentsign = 0
+    exponentman = exponent & ((1 << 6) - 1)
+  # get the mantissa value
+  mantissa = value
+  exponent -= 8
+  if exponent > 0:
+    mantissa /= (1<<exponent)
+  elif exponent < 0:
+    mantissa *= (1<<-exponent)
+  mantissa = round(mantissa) & ((1 << 8) - 1)
+  return (sign << 15) + (exponentsign << 14) + (exponentman << 8) + mantissa
+  
 def LoadStoreInstExec(instruction):
   # execute load/store instructions (LDR/LDA/LDX/STR/STX)
   # [instruction] 16-bit integer
@@ -87,7 +160,7 @@ def LoadStoreInstExec(instruction):
       value = readFromMemory(EA, indirect=i)
     if opcode == 3: # LDA
       if i: # indirect LDA is equivalent to direct LDR
-        value = readFromMemory(EA, False)
+        value = readFromMemory(EA, indirect=False)
       else:
         value = EA
     if opcode in [1,3]: # LDR/LDA
@@ -139,7 +212,7 @@ def AddSubInstExec(instruction):
     value = gprvalue - value
     
   if value >= (1 << 15) or value < (-1 << 15): # value overflowed, set cc(0) to 1
-    cc = 0b1000 # using bitwise OR to to set cc(0)
+    cc = 0b1000 # set cc(0)
     
   # using modulo to roll number back to unsigned [0,65535] then set GPR
   data["GPR"][r].value_set(value%(1<<16))
@@ -179,7 +252,7 @@ def TransferInstExec(instruction):
       jump = (value>=0) # jump if non-negative
   elif opcode == 10: # JCC
     cc = data["CC"].value()
-    jump = ((cc & (0b1 << (3-r))) > 0) # bitwise OR to get cc(r), then check if it is >0
+    jump = ((cc & (0b1 << (3-r))) > 0) # bitwise AND to get cc(r), then check if it is >0
   elif opcode in [11,12]: # JMA/JSR
     if opcode == 12: # JSR
       pc = data["PC"].value()
@@ -278,6 +351,144 @@ def ShiftInstExec(instruction):
   data["CC"].value_set(cc)
   return cc
 
+def FPVInstExec(instruction):
+  # execute floating point arithemetic / vector instructions (FADD/FSUB/VADD/VSUB/CNVRT)
+  # [instruction] 16-bit integer
+  # returns cc if success
+  # returns -(fault ID)-1 if fault occurs
+  opcode,r,ix,i,EA = splitInstructionLoadStore(instruction,fp=True)
+  value,cc = 0,0
+  if ix > 0:
+    # Need to Calculate Effective Address
+    EA += data["IXR"][ix].value()
+  if opcode in [27,28] and r in range(2): # FADD/FSUB
+    valraw = data["FR"][r].value()
+    newraw = readFromMemory(EA, indirect=i)
+    valfloat = rawtofloat(valraw)
+    newfloat = rawtofloat(newraw)
+    if opcode == 27: # FADD
+      resfloat = valfloat + newfloat
+    elif opcode == 28: # FSUB
+      resfloat = valfloat - newfloat
+    if abs(resfloat) > 0 and math.floor(math.log(abs(resfloat), 2)) > 64:
+      # value overflowed, set cc(0) to 1
+      cc = 0b1000 # set cc(0)
+    elif max(abs(valfloat), abs(newfloat)) > 0 and \
+      (resfloat == 0 or 
+      math.floor(math.log(max(abs(valfloat), abs(newfloat)),2)) > math.floor(math.log(abs(resfloat), 2))):
+      # value underflowed, set cc(1) to 1
+      cc = 0b0100 # set cc(1)
+    # set result
+    resraw = floattoraw(resfloat)
+    data["FR"][r].value_set(resraw)
+    # Set and Return cc
+    data["CC"].value_set(cc)
+    return cc
+  elif opcode in [29,30]: # VADD/VSUB
+    veclen = data["GPR"][r].value()
+    EA0 = readFromMemory(EA, indirect=i)
+    EA1 = readFromMemory(EA+1, indirect=i)
+    # helper status variables
+    flag, lastMAR, lastMBR = 0
+    for addr in range(veclen):
+      lastMAR = EA1 + addr
+      if EA0 + addr > 2047 or lastMAR > 2047:
+        fault(3) # Illegal Memory Address (memory installed)
+        flag = -4
+        break
+      if EA0 + addr < 6:
+        fault(0) # Illegal Memory Address (reserved location)
+        flag = -1
+        break
+      lastMAR = EA0 + addr
+      # since vector operations are memory-memory
+      # check if memory location is cached and writeback if so
+      cacheLine = checkHit((lastMAR) >> 4)
+      if cacheLine >= 0:
+        cleanCacheLine(cacheLine)
+      cacheLine = checkHit((EA1 + addr) >> 4)
+      if cacheLine >= 0:
+        cleanCacheLine(cacheLine)
+      # operate directly from memory, no caching
+      # using modulo to roll number back to unsigned [0,65535]
+      value0 = data['memory'][lastMAR]
+      value1 = data['memory'][EA1 + addr]
+      if opcode == 29: # VADD
+        lastMBR = (value0 + value1) % (1 << 16)
+      elif opcode == 30: # VSUB
+        lastMBR = (value0 - value1) % (1 << 16)
+      # write directory to memory, no caching then write memory
+      data['memory'][lastMAR] = lastMBR
+    # update MAR and MBR
+    data['MAR'].value_set(lastMAR)
+    data['MBR'].value_set(lastMBR)
+    # refresh memory block to update things
+    memoryBlockUpdate()
+    # Set cc
+    data["CC"].value_set(cc)
+    # if fault occured, return fault, else return cc
+    if flag < 0:
+      return flag
+    else:
+      return cc
+  elif opcode == 31: # CNVRT
+    f = data["GPR"][r].value()
+    if f == 0: # float to int
+      floatraw = readFromMemory(EA, indirect=i)
+      value = rawtofloat(floatraw) # get the float value
+      if value >= (1 << 15) or value < (-1 << 15): # value overflowed, set cc(0) to 1
+        cc = 0b1000 # set cc(0)
+        if value < 0:
+          value = (-1 << 15) + 1
+        else:
+          value = (1 << 15) - 1
+      elif 0 < abs(value) <= 0.5: # value underflowed, set cc(1) to 1
+        cc = 0b0100 # set cc(1)
+        value = 0
+      else:
+        value = round(value)
+      # using modulo to roll number back to unsigned [0,65535] then set GPR
+      data["GPR"][r].value_set(value%(1<<16))
+      # Set and Return cc
+      data["CC"].value_set(cc)
+      return cc
+    else: # int to float
+      value = readFromMemory(EA, indirect=i)
+      # if the sign bit is 1, it is considered as a negative number
+      # change the value from EA and from GPR from unsigned to signed number
+      if (value >> 15) > 0:
+        value -= (1 << 16)
+      floatraw = floattoraw(value) # convert to raw float
+      data["FR"][0].value_set(floatraw)
+      # Set and Return cc
+      data["CC"].value_set(cc)
+      return cc
+  
+def FPLSInstExec(instruction):
+  # execute floating register load/store instructions (LDFR/STFR)
+  # [instruction] 16-bit integer
+  # returns 0 if instruction is a successful load/store
+  # returns -(fault ID)-1 if fault occurs
+  opcode,r,ix,i,EA = splitInstructionLoadStore(instruction,fp=True)
+  if ix > 0:
+    # Need to Calculate Effective Address
+    EA += data["IXR"][ix].value()
+  if i > 0:
+    # special indirection, handled here instead of by memory module indirection
+    EA = readFromMemory(EA, indirect=False)
+  if opcode == 40: # LDFR
+    value0 = readFromMemory(EA, indirect=False)
+    value1 = readFromMemory(EA+1, indirect=False)
+    data["FR"][0].value_set(value0)
+    data["FR"][1].value_set(value1)
+    return 0
+  elif opcode == 41: # STFR
+    value0 = data["FR"][0].value()
+    value1 = data["FR"][1].value()
+    value = writeToMemory(EA, value0, indirect=False)
+    value = writeToMemory(EA+1, value1, indirect=False)
+    return value    
+
 def execute(instruction):
   # execute instruction num
   # [instruction] 16-bit integer (0-65535)
@@ -302,6 +513,10 @@ def execute(instruction):
     return ArithmeticInstExec(instruction) >= 0
   elif opcode in [25,26]:
     return ShiftInstExec(instruction) >=0
+  elif opcode in range(27,32):
+    return FPVInstExec(instruction) >= 0
+  elif opcode in [40,41]:
+    return FPLSInstExec(instruction) >= 0
   elif opcode in [49,50,51]:
     return ioInstExec(instruction) >= 0
   else:
